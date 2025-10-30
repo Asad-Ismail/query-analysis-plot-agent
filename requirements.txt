@@ -1,0 +1,24 @@
+# Core data / plotting
+numpy==2.3.4
+pandas==2.3.3
+matplotlib==3.10.7
+seaborn==0.13.2
+plotly==6.3.1
+
+# LangChain & LangGraph ecosystem (version-aligned)
+langchain==1.0.3
+langchain-core==1.0.2
+langchain-openai==1.0.1
+langgraph==1.0.2
+
+# LLM / OpenAI
+openai==2.6.1
+tiktoken==0.12.0
+
+# Utilities / tooling
+python-dotenv==1.2.1
+PyYAML==6.0.2
+pytest==8.4.2
+
+# Dev / notebook
+jupyter==1.0.0
