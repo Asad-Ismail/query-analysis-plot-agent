@@ -209,3 +209,4 @@ __marimo__/
 
 ## Ignore data files
 data/**
+outputs/**
