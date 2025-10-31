@@ -1,0 +1,24 @@
+roles:
+  admin:
+    chinook:
+      tables: null  # null = all tables
+    sakila:
+      tables: null
+    northwind:
+      tables: null
+  
+  analyst:
+    chinook:
+      tables: ["artists", "albums", "tracks", "invoices", "customers", "invoice_items"]
+    sakila:
+      tables: ["film", "actor", "customer", "rental"]
+    northwind:
+      tables: ["orders", "customers", "products"]
+  
+  viewer:
+    chinook:
+      tables: ["artists", "albums", "tracks"]
+    sakila:
+      tables: ["film", "actor"]
+    northwind:
+      tables: ["products"]

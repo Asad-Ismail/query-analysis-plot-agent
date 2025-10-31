@@ -1,0 +1,15 @@
+databases:
+  chinook:
+    path: "data/chinook.db"
+    type: "sqlite"
+    description: "Music store database"
+  
+  sakila:
+    path: "data/sakila.db"
+    type: "sqlite"
+    description: "Movie rental database"
+  
+  northwind:
+    path: "data/northwind_small.sqlite"
+    type: "sqlite"
+    description: "Business operations database"
