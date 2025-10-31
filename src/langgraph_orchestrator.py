@@ -190,7 +190,7 @@ class LangGraphOrchestrator:
                     row_count=0
                 )
             
-            logger.info(f"\n✅ Request completed in {execution_time:.2f}s")
+            logger.info(f"\n Request completed in {execution_time:.2f}s")
             return response
             
         except Exception as e:
@@ -207,7 +207,7 @@ class LangGraphOrchestrator:
     
     def _check_permissions_node(self, state: dict) -> dict:
         """Check user permissions and load database schema"""
-        logger.info("🔒 Checking permissions...")
+        logger.info("Checking permissions...")
         state["current_step"] = "checking_permissions"
         
         try:
@@ -234,7 +234,7 @@ class LangGraphOrchestrator:
     
     def _generate_sql_node(self, state: dict) -> dict:
         """Generate SQL query using analysis agent"""
-        logger.info("🔧 Generating SQL...")
+        logger.info(" Generating SQL...")
         state["current_step"] = "generating_sql"
         
         try:
@@ -317,7 +317,7 @@ class LangGraphOrchestrator:
                 "recommendations": insights.recommendations
             }
             
-            logger.info("✅ Insights generated")
+            logger.info(" Insights generated")
             logger.info(f"Summary: {insights.summary}")
             return state
             
@@ -350,7 +350,7 @@ class LangGraphOrchestrator:
                     "chart_type": viz_result["chart_type"],
                     "reasoning": viz_result["reasoning"]
                 }
-                logger.info(f"✅ Visualization saved: {viz_result['filepath']}")
+                logger.info(f" Visualization saved: {viz_result['filepath']}")
             else:
                 logger.warning(f"Visualization failed: {viz_result.get('error')}")
             
@@ -375,10 +375,10 @@ class LangGraphOrchestrator:
         logger.error(f"❌ Workflow failed: {state.get('error_message')}")
         return state
     
-    
+
     def _route_after_permissions(self, state: dict) -> Literal["continue", "error"]:
         """Route after permission check"""
-        if state["status"] == "error" or state["allowed_tables"]==None:
+        if state["status"] == "error":
             return "error"
         return "continue"
     

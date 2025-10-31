@@ -20,13 +20,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="AI Data Analysis Agent with LangGraph",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s "Show top 5 artists by sales" --database chinook
-  %(prog)s "Monthly revenue for 2009" -d chinook -r analyst
-  %(prog)s "List all customers" -d northwind --no-viz
-        """
-    )
+        epilog="""Examples:
+        %(prog)s "Show top 5 artists by sales" --database chinook
+        %(prog)s "Monthly revenue for 2009" -d chinook -r analyst
+        %(prog)s "List all customers" -d northwind --no-viz
+                """)
     
     parser.add_argument(
         "query", 
