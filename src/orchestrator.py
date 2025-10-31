@@ -9,9 +9,8 @@ class AgentOrchestrator:
     
     def __init__(self, openai_api_key: str, style_config: dict):
         #self.llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0, api_key=openai_api_key)
-        self.llm = ChatOpenAI(openai_api_base="https://chat.int.bayer.com/api/v2",openai_api_key=token,
-        model=model,
-        temperature=0.0)
+        model = 'o4-mini'
+        self.llm = ChatOpenAI(openai_api_base="https://chat.int.bayer.com/api/v2",openai_api_key=openai_api_key,model=model,temperature=0.0)
         self.db_manager = DatabaseManager()
         self.perm_manager = PermissionManager()
         self.analysis_agent = DataAnalysisAgent(self.llm)
