@@ -147,8 +147,13 @@ class DataAnalysisAgent:
                 4. Include helpful column aliases for readability
                 5. Only use tables and columns from the provided schema
 
+                ***CRITICAL RULE***:
+                If the user's query cannot be answered *exactly* using ONLY the tables and columns in the "Available Schema", you MUST respond with an error. 
+                DO NOT substitute other tables. For example, if the user asks for "employees" but that table is not in the schema, you must fail, not query "artists".
+
                 Available Schema:
                 {schema}"""),
+                
                 ("user", "{query}")
                         ])
         

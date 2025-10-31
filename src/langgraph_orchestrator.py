@@ -226,7 +226,7 @@ class LangGraphOrchestrator:
             state["allowed_tables"] = allowed_tables
             state["database_schema"] = schema
             
-            logger.info(f"✅ Permissions loaded. Allowed tables: {allowed_tables or 'ALL'}")
+            logger.info(f"Permissions loaded. Allowed tables: {allowed_tables or 'ALL'}")
             return state
             
         except Exception as e:
@@ -249,9 +249,18 @@ class LangGraphOrchestrator:
             
             # Validate SQL safety
             if not self.analysis_agent._is_safe_query(sql_output.sql_query):
-                state["status"] = "error"
-                state["error_message"] = "Generated query contains unsafe operations"
+                query_lower = sql_output.sql_query.lower()
+                if query_lower.startswith(('error', 'sorry', 'cannot', 'access denied')):
+                    logger.warning(f"LLM returned a soft error: {sql_output.sql_query}")
+                    state["status"] = "error"
+                    state["error_message"] = sql_output.sql_query
+                else:
+                    # It's a genuinely unsafe query
+                    logger.warning(f"Unsafe query detected: {sql_output.sql_query}")
+                    state["status"] = "error"
+                    state["error_message"] = "Generated query contains unsafe operations"
                 return state
+
             
             # Validate table permissions
             if state["allowed_tables"] and not self.analysis_agent._validate_table_access(
@@ -268,7 +277,7 @@ class LangGraphOrchestrator:
             }
             state["sql_validated"] = True
             
-            logger.info(f"✅ SQL generated: {sql_output.sql_query}")
+            logger.info(f" SQL generated: {sql_output.sql_query}")
             return state
             
         except Exception as e:
@@ -368,14 +377,14 @@ class LangGraphOrchestrator:
         """Finalize successful execution"""
         state["status"] = "success"
         state["current_step"] = "completed"
-        logger.info("✅ Workflow completed successfully")
+        logger.info(" Workflow completed successfully")
         return state
     
     def _finalize_error_node(self, state: dict) -> dict:
         """Finalize error state"""
         state["status"] = "error"
         state["current_step"] = "failed"
-        logger.error(f"❌ Workflow failed: {state.get('error_message')}")
+        logger.error(f" Workflow failed: {state.get('error_message')}")
         return state
     
 
