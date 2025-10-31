@@ -166,7 +166,9 @@ class LangGraphOrchestrator:
             if final_state["status"] == "success":
                 # Parse result data if present
                 data_preview = None
+                full_data_json = None
                 if final_state.get("result_data"):
+                    full_data_json = final_state.get("result_data") 
                     df = pd.read_json(StringIO(final_state["result_data"]))
                     data_preview = df.head(10).to_json(orient='records')
                 
@@ -175,6 +177,7 @@ class LangGraphOrchestrator:
                     query=query,
                     sql_query=final_state.get("sql_output", {}).get("sql_query") if final_state.get("sql_output") else None,
                     data_preview=data_preview,
+                    full_data=full_data_json,
                     row_count=final_state.get("row_count", 0),
                     insights=final_state.get("insights"),
                     visualization_path=final_state.get("visualization_path"),

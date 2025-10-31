@@ -96,6 +96,7 @@ class AgentResponse(BaseModel):
     query: str
     sql_query: Optional[str] = None
     data_preview: Optional[str] = None  # JSON string of first 10 rows
+    full_data: Optional[str] = None     # JSON string of full DataFrame
     row_count: int = 0
     insights: Optional[InsightsOutput] = None
     visualization_path: Optional[str] = None
