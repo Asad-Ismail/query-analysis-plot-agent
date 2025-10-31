@@ -17,9 +17,9 @@ load_dotenv(find_dotenv())
 
 def main():
     parser = argparse.ArgumentParser(description="AI Data Analysis Agents")
-    parser.add_argument("query", help="Natural language query")
+    parser.add_argument("--query","-q",default="Show top 2 best selling album", help="Natural language query")
     parser.add_argument("--database", "-d", default="chinook", help="Database name")
-    parser.add_argument("--role", "-r", default="analyst", help="User role")
+    parser.add_argument("--role", "-r", default="admin", help="User role")
     parser.add_argument("--no-viz", action="store_true", help="Skip visualization")
     
     args = parser.parse_args()
