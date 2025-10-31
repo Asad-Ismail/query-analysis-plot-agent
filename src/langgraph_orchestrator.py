@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class LangGraphOrchestrator:
-    """Production-ready orchestrator using LangGraph for workflow coordination"""
+    """LangGraph for workflow coordination"""
     
     def __init__(self, openai_api_key: str, style_config: dict, openai_api_base: str = None):
         """Initialize orchestrator with agents and managers
@@ -265,7 +265,7 @@ class LangGraphOrchestrator:
             }
             state["sql_validated"] = True
             
-            logger.info(f"✅ SQL generated: {sql_output.sql_query[:100]}...")
+            logger.info(f"✅ SQL generated: {sql_output.sql_query}")
             return state
             
         except Exception as e:
@@ -276,7 +276,7 @@ class LangGraphOrchestrator:
     
     def _execute_query_node(self, state: dict) -> dict:
         """Execute SQL query against database"""
-        logger.info("💾 Executing query...")
+        logger.info("Executing query...")
         state["current_step"] = "executing_query"
         
         try:
@@ -375,11 +375,10 @@ class LangGraphOrchestrator:
         logger.error(f"❌ Workflow failed: {state.get('error_message')}")
         return state
     
-    # Routing functions
     
     def _route_after_permissions(self, state: dict) -> Literal["continue", "error"]:
         """Route after permission check"""
-        if state["status"] == "error":
+        if state["status"] == "error" or state["allowed_tables"]==None:
             return "error"
         return "continue"
     

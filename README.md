@@ -5,7 +5,7 @@ LLM agent to query analyze and plot results
 pip install -r requirements.txt
 
 # Run
-python cli_v2.py "Show top 5 artists by sales" --database chinook
+python cli.py "Show top 5 artists by sales" --database chinook
 
 # Test
 pytest tests/ -v

@@ -140,18 +140,17 @@ class DataAnalysisAgent:
         # Create prompt
         prompt = ChatPromptTemplate.from_messages([
             ("system", """You are a SQL expert. Generate a SQLite SELECT query based on the user's request.
+                IMPORTANT RULES:
+                1. ONLY generate SELECT statements - no modifications allowed
+                2. Always include LIMIT clause (max 100 rows unless user specifies)
+                3. Use proper JOINs when multiple tables are needed
+                4. Include helpful column aliases for readability
+                5. Only use tables and columns from the provided schema
 
-IMPORTANT RULES:
-1. ONLY generate SELECT statements - no modifications allowed
-2. Always include LIMIT clause (max 100 rows unless user specifies)
-3. Use proper JOINs when multiple tables are needed
-4. Include helpful column aliases for readability
-5. Only use tables and columns from the provided schema
-
-Available Schema:
-{schema}"""),
-            ("user", "{query}")
-        ])
+                Available Schema:
+                {schema}"""),
+                ("user", "{query}")
+                        ])
         
         # Use structured output
         structured_llm = self.llm.with_structured_output(SQLQueryOutput)
@@ -185,22 +184,21 @@ Available Schema:
         prompt = ChatPromptTemplate.from_messages([
             ("system", """You are a data analyst. Provide clear, actionable insights from the data.
 
-Generate:
-1. 2-4 key findings (specific observations from the data)
-2. A one-sentence summary
-3. Optional recommendations (if applicable)
+            Generate:
+            1. 2-4 key findings (specific observations from the data)
+            2. A one-sentence summary
+            3. Optional recommendations (if applicable)
 
-Be specific with numbers and patterns you observe."""),
+            Be specific with numbers and patterns you observe."""),
             ("user", """Original Question: {query}
 
-SQL Explanation: {sql_explanation}
+            SQL Explanation: {sql_explanation}
 
-Data Summary:
-{data_summary}
+            Data Summary:
+            {data_summary}
 
-Full Data Preview (first 10 rows):
-{data_preview}""")
-        ])
+            Full Data Preview (first 10 rows):
+            {data_preview}""") ])
         
         # Use structured output
         structured_llm = self.llm.with_structured_output(InsightsOutput)

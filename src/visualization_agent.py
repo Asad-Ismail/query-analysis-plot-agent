@@ -156,28 +156,27 @@ class VisualizationAgent:
         prompt = ChatPromptTemplate.from_messages([
             ("system", """You are a data visualization expert. Recommend the best chart type.
 
-Available chart types:
-- bar: Compare categories or show rankings
-- line: Show trends over time or continuous data
-- pie: Show proportions (max 8 categories)
-- scatter: Show relationships between two numeric variables
-- table: When data is better shown in tabular format
+            Available chart types:
+            - bar: Compare categories or show rankings
+            - line: Show trends over time or continuous data
+            - pie: Show proportions (max 8 categories)
+            - scatter: Show relationships between two numeric variables
+            - table: When data is better shown in tabular format
 
-Consider:
-1. Data types (categorical vs numeric)
-2. Number of categories (pie charts only for <=8)
-3. Presence of time-series data
-4. Query context"""),
+            Consider:
+            1. Data types (categorical vs numeric)
+            2. Number of categories (pie charts only for <=8)
+            3. Presence of time-series data
+            4. Query context"""),
             ("user", """Query: {query}
 
-Data Characteristics:
-{characteristics}
+            Data Characteristics:
+            {characteristics}
 
-Column Names: {columns}
-Row Count: {row_count}
+            Column Names: {columns}
+            Row Count: {row_count}
 
-Recommend the best chart type and specify which columns to use.""")
-        ])
+            Recommend the best chart type and specify which columns to use.""")])
         
         # Use structured output
         structured_llm = self.llm.with_structured_output(ChartRecommendation)
@@ -231,8 +230,7 @@ Recommend the best chart type and specify which columns to use.""")
         x_col = recommendation.x_column or df.columns[0]
         y_col = recommendation.y_column or df.columns[1]
         
-        # Limit to top 15 for readability
-        df_plot = df.nlargest(15, y_col) if pd.api.types.is_numeric_dtype(df[y_col]) else df.head(15)
+        df_plot = df
         
         ax.bar(range(len(df_plot)), df_plot[y_col], color=self.style['colors'][0])
         ax.set_xticks(range(len(df_plot)))
@@ -272,6 +270,7 @@ Recommend the best chart type and specify which columns to use.""")
         
         # Limit to top 8 categories
         df_plot = df.nlargest(8, values_col) if pd.api.types.is_numeric_dtype(df[values_col]) else df.head(8)
+        df_plot = df 
         
         colors = self.style['colors'][:len(df_plot)]
         ax.pie(
