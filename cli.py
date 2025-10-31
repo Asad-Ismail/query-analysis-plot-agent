@@ -1,11 +1,13 @@
-"""Command Line Interface"""
+"""Command Line Interface - Updated for Production"""
 import argparse
 from dotenv import find_dotenv, load_dotenv
 import os
-from src.orchestrator import AgentOrchestrator
+from src.langgraph_orchestrator import LangGraphOrchestrator
+import sys
 
-load_dotenv()
+load_dotenv(find_dotenv())
 
+# Style configuration for visualizations
 STYLE_CONFIG = {
     "colors": ["#2E86AB", "#A23B72", "#F18F01", "#C73E1D", "#6A994E"],
     "figure_size": (10, 6),
@@ -13,35 +15,152 @@ STYLE_CONFIG = {
 }
 
 
-load_dotenv(find_dotenv())
-
 def main():
-    parser = argparse.ArgumentParser(description="AI Data Analysis Agents")
-    parser.add_argument("--query","-q",default="Show top 2 best selling album", help="Natural language query")
-    parser.add_argument("--database", "-d", default="chinook", help="Database name")
-    parser.add_argument("--role", "-r", default="admin", help="User role")
-    parser.add_argument("--no-viz", action="store_true", help="Skip visualization")
+    """Main CLI entry point"""
+    parser = argparse.ArgumentParser(
+        description="AI Data Analysis Agent with LangGraph",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s "Show top 5 artists by sales" --database chinook
+  %(prog)s "Monthly revenue for 2009" -d chinook -r analyst
+  %(prog)s "List all customers" -d northwind --no-viz
+        """
+    )
+    
+    parser.add_argument(
+        "query", 
+        help="Natural language query to analyze"
+    )
+    parser.add_argument(
+        "--database", "-d", 
+        default="chinook", 
+        help="Database name (default: chinook)"
+    )
+    parser.add_argument(
+        "--role", "-r", 
+        default="analyst", 
+        choices=["admin", "analyst", "viewer"],
+        help="User role for permissions (default: analyst)"
+    )
+    parser.add_argument(
+        "--no-viz", 
+        action="store_true", 
+        help="Skip visualization creation"
+    )
+    parser.add_argument(
+        "--api-key",
+        help="OpenAI API key (or set OPENAI_API_KEY env variable)"
+    )
+    parser.add_argument(
+        "--api-base",
+        default="https://chat.int.bayer.com/api/v2",
+        help="Custom OpenAI API base URL"
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose logging"
+    )
     
     args = parser.parse_args()
     
-    # Initialize orchestrator
-    orchestrator = AgentOrchestrator(
-        openai_api_key=os.getenv("OPEENAI_API_KEY"),
-        style_config=STYLE_CONFIG
-    )
+    # Get API key
+    api_key = args.api_key or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("Error: OpenAI API key required. Set OPENAI_API_KEY environment variable or use --api-key")
+        sys.exit(1)
     
-    # Process request
-    result = orchestrator.process_request(
-        query=args.query,
-        database=args.database,
-        user_role=args.role,
-        create_viz=not args.no_viz
-    )
+    # Configure logging
+    if args.verbose:
+        import logging
+        logging.basicConfig(level=logging.INFO)
     
-    if result["status"] == "success":
-        print(f"\n📊 Results:\n{result['data'].head()}")
-    else:
-        print(f"\n❌ Error: {result.get('error')}")
+    try:
+        # Initialize orchestrator
+        print(f"\n🚀 Initializing AI Data Analysis Agent...")
+        print(f"   Database: {args.database}")
+        print(f"   User Role: {args.role}")
+        print(f"   Visualization: {'Disabled' if args.no_viz else 'Enabled'}")
+        
+        orchestrator = LangGraphOrchestrator(
+            openai_api_key=api_key,
+            style_config=STYLE_CONFIG,
+            openai_api_base=args.api_base
+        )
+        
+        # Process request
+        print(f"\n📊 Processing query: {args.query}\n")
+        
+        result = orchestrator.process_request(
+            query=args.query,
+            database=args.database,
+            user_role=args.role,
+            create_viz=not args.no_viz
+        )
+        
+        # Display results
+        if result.status == "success":
+            print(f"\n{'='*60}")
+            print("✅ SUCCESS")
+            print(f"{'='*60}\n")
+            
+            # SQL Query
+            if result.sql_query:
+                print("📝 SQL Query:")
+                print(f"   {result.sql_query}\n")
+            
+            # Data Summary
+            print(f"📊 Results: {result.row_count} rows returned")
+            
+            if result.data_preview and result.row_count > 0:
+                import pandas as pd
+                import json
+                df = pd.DataFrame(json.loads(result.data_preview))
+                print("\n   Preview (first 10 rows):")
+                print(df.to_string(index=False).replace('\n', '\n   '))
+            
+            # Insights
+            if result.insights:
+                print(f"\n💡 Key Insights:")
+                print(f"   {result.insights.summary}\n")
+                for i, finding in enumerate(result.insights.key_findings, 1):
+                    print(f"   {i}. {finding}")
+                
+                if result.insights.recommendations:
+                    print(f"\n💼 Recommendations:")
+                    for i, rec in enumerate(result.insights.recommendations, 1):
+                        print(f"   {i}. {rec}")
+            
+            # Visualization
+            if result.visualization_path:
+                print(f"\n📈 Visualization saved: {result.visualization_path}")
+                print(f"   Chart type: {result.chart_type}")
+            
+            # Execution time
+            if result.execution_time_seconds:
+                print(f"\n⏱️  Execution time: {result.execution_time_seconds:.2f}s")
+            
+            print(f"\n{'='*60}\n")
+            
+        else:
+            print(f"\n{'='*60}")
+            print("❌ ERROR")
+            print(f"{'='*60}\n")
+            print(f"   {result.error}\n")
+            print(f"{'='*60}\n")
+            sys.exit(1)
+            
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Operation cancelled by user")
+        sys.exit(130)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {str(e)}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
