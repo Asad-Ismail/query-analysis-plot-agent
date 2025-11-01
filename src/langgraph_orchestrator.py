@@ -42,10 +42,11 @@ class LangGraphOrchestrator:
         self.perm_manager = PermissionManager()
         self.analysis_agent = DataAnalysisAgent(self.llm)
         self.viz_agent = VisualizationAgent(self.llm, style_config)
-        
+
+        self.max_retries = 3
         self.graph = self._build_graph()
         
-        logger.info("LangGraph Orchestrator initialized")
+        logger.info("LangGraph Orchestrator initialized!")
     
     def _build_graph(self) -> StateGraph:
         """Build the LangGraph workflow
@@ -89,9 +90,10 @@ class LangGraphOrchestrator:
         
         workflow.add_conditional_edges(
             "execute_query",
-            self._route_after_execution,
+            self._route_sql_execution, 
             {
-                "continue": "generate_insights",
+                "generate_insights": "generate_insights",
+                "retry_sql": "generate_sql", 
                 "error": "finalize_error"
             }
         )
@@ -263,7 +265,7 @@ class LangGraphOrchestrator:
                     state["status"] = "error"
                     state["error_message"] = sql_output.sql_query
                 else:
-                    # It's a genuinely unsafe query
+                    # It's unsafe query
                     logger.warning(f"Unsafe query detected: {sql_output.sql_query}")
                     state["status"] = "error"
                     state["error_message"] = "Generated query contains unsafe operations"
@@ -308,7 +310,13 @@ class LangGraphOrchestrator:
             state["result_data"] = df.to_json(orient='records')
             state["row_count"] = len(df)
             
-            logger.info(f"✅ Query executed: {len(df)} rows returned")
+            logger.info(f"Successfully Query executed: {len(df)} rows returned")
+            return state
+
+        except (pd.errors.DatabaseError, sqlite3.Error) as e:
+            logger.warning(f"SQL execution error: {str(e)}")
+            state["error_history"] = state.get("error_history", []) + [str(e)]
+            state["status"] = "retry_sql" 
             return state
             
         except Exception as e:
@@ -353,7 +361,7 @@ class LangGraphOrchestrator:
     
     def _create_visualization_node(self, state: dict) -> dict:
         """Create visualization"""
-        logger.info("📊 Creating visualization...")
+        logger.info("Creating visualization...")
         state["current_step"] = "creating_visualization"
         
         try:
@@ -408,11 +416,27 @@ class LangGraphOrchestrator:
             return "error"
         return "continue"
     
-    def _route_after_execution(self, state: dict) -> Literal["continue", "error"]:
-        """Route after query execution"""
-        if state["status"] == "error":
+
+    def _route_sql_execution(self, state: dict) -> Literal["generate_insights", "retry_sql", "error"]:
+        """Route after query execution, checking for retries."""
+        
+        if state.get("status") == "retry_sql":
+            state["status"] = "pending" # Reset status for the next attempt
+            retry_count = state.get("retry_count", 0) + 1
+            state["retry_count"] = retry_count
+            
+            if retry_count > self.max_retries:
+                logger.error("Max SQL retries exceeded.")
+                state["error_message"] = "Max SQL retries exceeded after query failed."
+                return "error"
+            
+            logger.info(f"Retrying SQL generation (attempt {retry_count})...")
+            return "retry_sql"
+        
+        if state.get("status") == "error":
             return "error"
-        return "continue"
+            
+        return "generate_insights"
     
     def _route_after_insights(self, state: dict) -> Literal["visualize", "skip_viz"]:
         """Route after insights generation"""

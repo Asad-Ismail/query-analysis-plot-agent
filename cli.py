@@ -23,8 +23,7 @@ def main():
         epilog="""Examples:
         %(prog)s "Show top 5 artists by sales" --database chinook
         %(prog)s "Monthly revenue for 2009" -d chinook -r analyst
-        %(prog)s "List all customers" -d northwind --no-viz
-                """)
+        %(prog)s "List all customers" -d northwind --no-viz """)
     
     parser.add_argument(
         "query", 
@@ -76,7 +75,7 @@ def main():
     
     try:
         # Initialize orchestrator
-        print(f"\n🚀 Initializing AI Data Analysis Agent...")
+        print(f"\n Initializing AI Data Analysis Agent...")
         print(f"   Database: {args.database}")
         print(f"   User Role: {args.role}")
         print(f"   Visualization: {'Disabled' if args.no_viz else 'Enabled'}")
@@ -88,7 +87,7 @@ def main():
         )
         
         # Process request
-        print(f"\n📊 Processing query: {args.query}\n")
+        print(f"\n Processing query: {args.query}\n")
         
         result = orchestrator.process_request(
             query=args.query,
@@ -100,16 +99,16 @@ def main():
         # Display results
         if result.status == "success":
             print(f"\n{'='*60}")
-            print("✅ SUCCESS")
+            print(" SUCCESS")
             print(f"{'='*60}\n")
             
             # SQL Query
             if result.sql_query:
-                print("📝 SQL Query:")
+                print("SQL Query:")
                 print(f"   {result.sql_query}\n")
             
             # Data Summary
-            print(f"📊 Results: {result.row_count} rows returned")
+            print(f" Results: {result.row_count} rows returned")
             
             if result.data_preview and result.row_count > 0:
                 import pandas as pd
@@ -120,19 +119,19 @@ def main():
             
             # Insights
             if result.insights:
-                print(f"\n💡 Key Insights:")
+                print(f"\nKey Insights:")
                 print(f"   {result.insights.summary}\n")
                 for i, finding in enumerate(result.insights.key_findings, 1):
                     print(f"   {i}. {finding}")
                 
                 if result.insights.recommendations:
-                    print(f"\n💼 Recommendations:")
+                    print(f"\nRecommendations:")
                     for i, rec in enumerate(result.insights.recommendations, 1):
                         print(f"   {i}. {rec}")
             
             # Visualization
             if result.visualization_path:
-                print(f"\n📈 Visualization saved: {result.visualization_path}")
+                print(f"\nVisualization saved: {result.visualization_path}")
                 print(f"   Chart type: {result.chart_type}")
             
             # Execution time
@@ -143,17 +142,17 @@ def main():
             
         else:
             print(f"\n{'='*60}")
-            print("❌ ERROR")
+            print(" ERROR!!")
             print(f"{'='*60}\n")
             print(f"   {result.error}\n")
             print(f"{'='*60}\n")
             sys.exit(1)
             
     except KeyboardInterrupt:
-        print("\n\n⚠️  Operation cancelled by user")
+        print("\n\n  Operation cancelled by user")
         sys.exit(130)
     except Exception as e:
-        print(f"\n❌ Unexpected error: {str(e)}")
+        print(f"\n Unexpected error: {str(e)}")
         if args.verbose:
             import traceback
             traceback.print_exc()

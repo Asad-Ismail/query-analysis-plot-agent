@@ -112,7 +112,8 @@ class DataAnalysisAgent:
         self, 
         query: str, 
         schema: Dict[str, List[str]], 
-        allowed_tables: Optional[List[str]]
+        allowed_tables: Optional[List[str]],
+        error_history: Optional[List[str]] = None
     ) -> SQLQueryOutput:
         """Generate SQL using LLM with structured output
         
@@ -136,6 +137,16 @@ class DataAnalysisAgent:
         
         # Format schema for prompt
         schema_text = self._format_schema(filtered_schema)
+
+        history_text = ""
+        if error_history:
+            history_text = f"""
+            ***PREVIOUS ATTEMPT FAILED*** 
+            Your last SQL query failed. Please review the error and generate a new, corrected query.
+            The error was:
+            {'\n'.join(error_history)}
+            ***REVIEW AND FIX THE QUERY***
+            """
         
         # Create prompt
         prompt = ChatPromptTemplate.from_messages([
@@ -154,16 +165,15 @@ class DataAnalysisAgent:
                 Available Schema:
                 {schema}"""),
                 
-                ("user", "{query}")
-                        ])
+                ("user", """{history}
+                User Query: {query}""")
+                ])
         
         # Use structured output
         structured_llm = self.llm.with_structured_output(SQLQueryOutput)
         
         # Generate SQL
-        result = structured_llm.invoke(
-            prompt.format_messages(schema=schema_text, query=query)
-        )
+        result = structured_llm.invoke(prompt.format_messages(schema=schema_text, history=history_text, query=query))
         
         return result
     
