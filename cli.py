@@ -136,7 +136,7 @@ def main():
             
             # Execution time
             if result.execution_time_seconds:
-                print(f"\n⏱️  Execution time: {result.execution_time_seconds:.2f}s")
+                print(f"\n Execution time: {result.execution_time_seconds:.2f}s")
             
             print(f"\n{'='*60}\n")
             

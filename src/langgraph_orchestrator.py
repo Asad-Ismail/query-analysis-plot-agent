@@ -5,7 +5,7 @@ import pandas as pd
 from io import StringIO
 import time
 import logging
-from src.models import AnalysisState, AgentResponse, SQLQueryOutput, InsightsOutput
+from src.models import  AgentResponse, SQLQueryOutput, InsightsOutput
 from src.database_manager import DatabaseManager, PermissionManager
 from src.analysis_agent import DataAnalysisAgent
 from src.visualization_agent import VisualizationAgent
@@ -207,8 +207,7 @@ class LangGraphOrchestrator:
                 execution_time_seconds=time.time() - start_time,
                 row_count=0
             )
-    
-    # Node implementations
+
     
     def _check_permissions_node(self, state: dict) -> dict:
         """Check user permissions and load database schema"""
@@ -265,7 +264,7 @@ class LangGraphOrchestrator:
                     state["status"] = "error"
                     state["error_message"] = sql_output.sql_query
                 else:
-                    # It's unsafe query
+                    # It's a genuinely unsafe query
                     logger.warning(f"Unsafe query detected: {sql_output.sql_query}")
                     state["status"] = "error"
                     state["error_message"] = "Generated query contains unsafe operations"
@@ -361,7 +360,7 @@ class LangGraphOrchestrator:
     
     def _create_visualization_node(self, state: dict) -> dict:
         """Create visualization"""
-        logger.info("Creating visualization...")
+        logger.info("📊 Creating visualization...")
         state["current_step"] = "creating_visualization"
         
         try:
