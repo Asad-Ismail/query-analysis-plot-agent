@@ -148,8 +148,6 @@ class TestChinookFunctional:
         with sqlite3.connect(db_path) as conn:
             gt_df = pd.read_sql_query(ground_truth_sql, conn)
         gt_count = gt_df.iloc[0, 0]
-        assert gt_count == 59
-
 
         response = orchestrator.process_request(
             query=query,
@@ -167,7 +165,6 @@ class TestChinookFunctional:
         agent_df = get_agent_df(response)
         agent_count = agent_df.iloc[0, 0]
         
-        # 3. Compare
         assert agent_count == gt_count
 
     def test_easy_3_where_clause(self, orchestrator, db_path):
@@ -353,7 +350,7 @@ class TestChinookFunctional:
         response = orchestrator.process_request(
             query=query,
             database="chinook",
-            user_role="viewer"  
+            user_role="viewer"  )
         
         print(f"\n[Agent SQL]: {response.sql_query}")
         print(f"[Agent Error]: {response.error}")

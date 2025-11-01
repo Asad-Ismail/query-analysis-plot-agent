@@ -9,6 +9,7 @@ class DatabaseManager:
     def __init__(self, config_path: str = "config/databases.yaml"):
         self.databases = {}
         self.load_config(config_path)
+        self.schema_cache = {}
     
     def load_config(self, config_path: str):
         """Load database configurations"""
@@ -31,6 +32,10 @@ class DatabaseManager:
     
     def get_schema(self, db_name: str) -> Dict[str, List[str]]:
         """Get database schema"""
+
+        if db_name in self.schema_cache:
+            print(f"Cache Hit!!")
+            return self.schema_cache[db_name]
         conn = self.get_connection(db_name)
         cursor = conn.cursor()
         
@@ -44,6 +49,7 @@ class DatabaseManager:
             schema[table] = [col[1] for col in columns]
         
         conn.close()
+        self.schema_cache[db_name] = schema
         return schema
 
 class PermissionManager:
