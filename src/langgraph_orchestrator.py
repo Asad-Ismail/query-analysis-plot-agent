@@ -371,7 +371,7 @@ class LangGraphOrchestrator:
     
     def _generate_insights_node(self, state: dict) -> dict:
         """Generate insights from query results"""
-        logger.info("🔍 Generating insights...")
+        logger.info(" Generating insights...")
         state["current_step"] = "generating_insights"
         
         try:

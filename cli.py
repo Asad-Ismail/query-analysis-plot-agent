@@ -151,9 +151,6 @@ def main():
             print(f"{'='*60}\n")
             sys.exit(1)
             
-    except KeyboardInterrupt:
-        print("\n\n  Operation cancelled by user")
-        sys.exit(130)
     except Exception as e:
         print(f"\n Unexpected error: {str(e)}")
         if args.verbose:

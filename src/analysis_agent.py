@@ -33,7 +33,7 @@ class DataAnalysisAgent:
         self, 
         query: str, 
         conn, 
-        schema: Dict[str, List[str]],
+        schema: Dict[str, dict],
         allowed_tables: Optional[List[str]] = None
     ) -> Dict:
         """Main analysis workflow with structured outputs
@@ -50,11 +50,11 @@ class DataAnalysisAgent:
         try:
             logger.info(f"Starting analysis for query: {query}")
             
-            # Step 1: Generate SQL with structured output
+            # Generate SQL with structured output
             sql_output = self._generate_sql_structured(query, schema, allowed_tables)
             logger.info(f"Generated SQL: {sql_output.sql_query}")
             
-            # Step 2: Safety validation
+            # Safety validation
             if not self._is_safe_query(sql_output.sql_query):
                 logger.warning("Unsafe query detected")
                 return {
@@ -63,7 +63,7 @@ class DataAnalysisAgent:
                     "query": query
                 }
             
-            # Step 3: Validate tables used are allowed
+            # Validate tables used are allowed
             if allowed_tables and not self._validate_table_access(
                 sql_output.tables_used, allowed_tables
             ):
@@ -74,11 +74,11 @@ class DataAnalysisAgent:
                     "query": query
                 }
             
-            # Step 4: Execute query
+            # Execute query
             df = pd.read_sql_query(sql_output.sql_query, conn)
             logger.info(f"Query executed successfully: {len(df)} rows returned")
             
-            # Step 5: Generate insights with structured output
+            # Generate insights with structured output
             insights = self._generate_insights_structured(query, df, sql_output.explanation)
             logger.info("Insights generated successfully")
             
@@ -111,7 +111,7 @@ class DataAnalysisAgent:
     def _generate_sql_structured(
         self, 
         query: str, 
-        schema: Dict[str, List[str]], 
+        schema: Dict[str, dict], 
         allowed_tables: Optional[List[str]],
         error_history: Optional[List[str]] = None
     ) -> SQLQueryOutput:
@@ -128,13 +128,12 @@ class DataAnalysisAgent:
         # Filter schema based on permissions
         if allowed_tables:
             filtered_schema = {
-                table: cols 
-                for table, cols in schema.items() 
+                table: info 
+                for table, info in schema.items() 
                 if table in allowed_tables
             }
         else:
             filtered_schema = schema
-        
         # Format schema for prompt
         schema_text = self._format_schema(filtered_schema)
 
@@ -225,17 +224,23 @@ class DataAnalysisAgent:
                 data_summary=data_summary,
                 data_preview=df.head(10).to_string()
             )
-        )
-        
+        )      
         return result
     
-    def _format_schema(self, schema: Dict[str, List[str]]) -> str:
-        """Format schema for prompt"""
-        lines = []
-        for table, columns in schema.items():
-            lines.append(f"Table: {table}")
-            lines.append(f"  Columns: {', '.join(columns)}")
-        return "\n".join(lines)
+    def _format_schema(self, schema: Dict[str, dict]) -> str: 
+            """Format schema with types and foreign keys for prompt"""
+            lines = []
+            for table_name, table_info in schema.items():
+                lines.append(f"Table: {table_name}")
+                
+                # Format columns with types (Task 1)
+                column_lines = [
+                    f"{col['name']} ({col['type']})" 
+                    for col in table_info['columns']
+                ]
+                lines.append(f"  Columns: {', '.join(column_lines)}")
+            
+            return "\n".join(lines) # 
     
     def _prepare_data_summary(self, df: pd.DataFrame) -> str:
         """Prepare statistical summary of data"""
