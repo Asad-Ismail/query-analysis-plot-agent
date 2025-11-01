@@ -360,7 +360,7 @@ class LangGraphOrchestrator:
     
     def _create_visualization_node(self, state: dict) -> dict:
         """Create visualization"""
-        logger.info("📊 Creating visualization...")
+        logger.info("Creating visualization...")
         state["current_step"] = "creating_visualization"
         
         try:
