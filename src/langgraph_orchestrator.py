@@ -250,7 +250,15 @@ class LangGraphOrchestrator:
             # Validate SQL safety
             if not self.analysis_agent._is_safe_query(sql_output.sql_query):
                 query_lower = sql_output.sql_query.lower()
-                if query_lower.startswith(('error', 'sorry', 'cannot', 'access denied')):
+
+                print(f"Output query is {query_lower}")
+
+                if not query_lower:
+                    logger.warning(f"OOD query detected!")
+                    state["status"] = "error"
+                    state["error_message"] = "Out of Domain Query. Please ask relevan questions!"
+
+                elif query_lower.startswith(('error', 'sorry', 'cannot', 'access denied')):
                     logger.warning(f"LLM returned a soft error: {sql_output.sql_query}")
                     state["status"] = "error"
                     state["error_message"] = sql_output.sql_query
