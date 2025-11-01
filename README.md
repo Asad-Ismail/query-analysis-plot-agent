@@ -12,3 +12,9 @@ python cli.py "Show top 5 artists by sales" --database chinook
 # Test
 
 pytest -s -v tests/test_functional_chinook.py
+
+## RUn backend and front end 
+
+python app.py
+
+index.html 

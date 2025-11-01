@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analysis Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+        .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: left; border: 1px solid #e5e7eb; }
+        th { background-color: #f3f4f6; font-weight: 600; }
+        tr:hover { background-color: #f9fafb; }
+        
+        .sql-box { 
+            background: #1e293b; 
+            color: #e2e8f0; 
+            padding: 12px; 
+            border-radius: 6px; 
+            font-family: 'Courier New', monospace; 
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            height: calc(100vh - 80px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-5 shadow-lg">
+        <h1 class="text-3xl font-bold">Data Analysis Agent</h1>
+    </header>
+
+    <!-- Main 3-Column Grid -->
+    <div class="main-grid">
+        
+        <!-- LEFT COLUMN: Controls + Chat -->
+        <div class="bg-white border-r border-gray-200 flex flex-col">
+            
+            <!-- Database Controls -->
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+                <label class="block text-sm font-semibold mb-2">Database</label>
+                <select id="database-select" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="chinook">chinook (Music Store)</option>
+                    <option value="sakila">sakila (Movie Rental)</option>
+                    <option value="northwind">northwind (Business)</option>
+                </select>
+                
+                <label class="block text-sm font-semibold mt-3 mb-2">Role</label>
+                <select id="role-select" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="analyst">analyst (Standard)</option>
+                    <option value="admin">admin (Full Access)</option>
+                    <option value="viewer">viewer (Limited)</option>
+                </select>
+
+                <label class="block text-sm font-semibold mt-3 mb-2">Chart Type</label>
+                <select id="chart-select" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="auto">Auto (AI Decides)</option>
+                    <option value="bar">Bar Chart</option>
+                    <option value="line">Line Chart</option>
+                    <option value="pie">Pie Chart</option>
+                    <option value="scatter">Scatter Plot</option>
+                </select>
+            </div>
+            
+            <!-- Chat History -->
+            <div id="chat-history" class="flex-1 p-4 overflow-y-auto scrollbar-thin space-y-3">
+                <div class="text-sm text-gray-500 text-center py-4">
+                    Ask the agent...
+                </div>
+            </div>
+            
+            <!-- Large Input Area -->
+            <div class="p-4 border-t border-gray-200 bg-gray-50">
+                <form id="query-form" class="space-y-2">
+                    <textarea
+                        id="query-input"
+                        placeholder="Ask the agent..."
+                        class="w-full p-3 border border-gray-300 rounded-lg text-base resize-none"
+                        rows="3"
+                        required
+                    ></textarea>
+                    <button
+                        type="submit"
+                        id="send-btn"
+                        class="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 text-base font-semibold"
+                    >
+                        Send Query
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- MIDDLE COLUMN: Data + Visualization -->
+        <div class="bg-white flex flex-col overflow-hidden">
+            
+            <!-- Data Table (Top Half) -->
+            <div class="flex-1 border-b border-gray-200 overflow-hidden flex flex-col">
+                <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="font-semibold text-gray-700">📊 Query Results</h2>
+                    <span id="row-count" class="text-sm text-gray-500"></span>
+                </div>
+                <div id="data-container" class="flex-1 overflow-auto scrollbar-thin p-4">
+                    <div class="text-center text-gray-400 py-8">No data yet</div>
+                </div>
+            </div>
+            
+            <!-- Visualization (Bottom Half) -->
+            <div class="flex-1 overflow-hidden flex flex-col">
+                <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="font-semibold text-gray-700">📈 Visualization</h2>
+                    <span id="chart-info" class="text-sm text-gray-500"></span>
+                </div>
+                <div id="viz-container" class="flex-1 overflow-auto scrollbar-thin p-4 flex items-center justify-center">
+                    <div class="text-center text-gray-400">No visualization yet</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Schema + SQL + Insights -->
+        <div class="bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+            
+            <!-- Schema (Takes most space) -->
+            <div class="flex-1 overflow-hidden flex flex-col">
+                <div class="p-3 bg-gray-50 border-b border-gray-200">
+                    <h2 class="font-semibold text-gray-700">🗄️ Database Schema</h2>
+                </div>
+                <div id="schema-container" class="flex-1 overflow-y-auto scrollbar-thin p-4 text-sm">
+                    <div class="text-gray-400">Loading schema...</div>
+                </div>
+            </div>
+
+            <!-- SQL Query Display (Collapsible) -->
+            <div class="border-t border-gray-200 bg-gray-50">
+                <button 
+                    id="toggle-sql-btn" 
+                    class="w-full p-3 text-left font-semibold text-gray-700 hover:bg-gray-100 flex justify-between items-center"
+                >
+                    <span>💻 Generated SQL</span>
+                    <span id="sql-arrow" class="text-gray-400">▼</span>
+                </button>
+                <div id="sql-container" class="hidden p-4 max-h-60 overflow-y-auto scrollbar-thin">
+                    <div class="sql-box">No SQL query yet</div>
+                </div>
+            </div>
+
+            <!-- Insights (Collapsible) -->
+            <div class="border-t border-gray-200 bg-gray-50">
+                <button 
+                    id="toggle-insights-btn" 
+                    class="w-full p-3 text-left font-semibold text-gray-700 hover:bg-gray-100 flex justify-between items-center"
+                >
+                    <span>💡 Insights</span>
+                    <span id="insights-arrow" class="text-gray-400">▼</span>
+                </button>
+                <div id="insights-container" class="hidden p-4 max-h-60 overflow-y-auto scrollbar-thin text-sm">
+                    <div class="text-gray-400">No insights yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000/api';
+        const OUTPUT_BASE = 'http://127.0.0.1:5000/outputs';
+
+        // Elements
+        const dbSelect = document.getElementById('database-select');
+        const roleSelect = document.getElementById('role-select');
+        const chartSelect = document.getElementById('chart-select');
+        const queryForm = document.getElementById('query-form');
+        const queryInput = document.getElementById('query-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatHistory = document.getElementById('chat-history');
+        const dataContainer = document.getElementById('data-container');
+        const vizContainer = document.getElementById('viz-container');
+        const schemaContainer = document.getElementById('schema-container');
+        const sqlContainer = document.getElementById('sql-container');
+        const insightsContainer = document.getElementById('insights-container');
+        const rowCount = document.getElementById('row-count');
+        const chartInfo = document.getElementById('chart-info');
+        const toggleSqlBtn = document.getElementById('toggle-sql-btn');
+        const toggleInsightsBtn = document.getElementById('toggle-insights-btn');
+        const sqlArrow = document.getElementById('sql-arrow');
+        const insightsArrow = document.getElementById('insights-arrow');
+
+        // Toggle SQL panel
+        toggleSqlBtn.addEventListener('click', () => {
+            sqlContainer.classList.toggle('hidden');
+            sqlArrow.textContent = sqlContainer.classList.contains('hidden') ? '▼' : '▲';
+        });
+
+        // Toggle Insights panel
+        toggleInsightsBtn.addEventListener('click', () => {
+            insightsContainer.classList.toggle('hidden');
+            insightsArrow.textContent = insightsContainer.classList.contains('hidden') ? '▼' : '▲';
+        });
+
+        // Load schema on database change
+        dbSelect.addEventListener('change', loadSchema);
+
+        // Load initial schema
+        loadSchema();
+
+        async function loadSchema() {
+            const database = dbSelect.value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/schema`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ database })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    displaySchema(data.schema);
+                } else {
+                    schemaContainer.innerHTML = `<div class="text-red-500">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                schemaContainer.innerHTML = `<div class="text-red-500">Failed to load schema</div>`;
+            }
+        }
+
+        function displaySchema(schema) {
+            let html = '';
+            for (const [table, columns] of Object.entries(schema)) {
+                html += `
+                    <div class="mb-4">
+                        <div class="font-semibold text-indigo-600">${table}</div>
+                        <div class="ml-3 text-gray-600 text-xs space-y-1">
+                            ${columns.map(col => `<div>• ${col}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            schemaContainer.innerHTML = html;
+        }
+
+        // Handle query submission
+        queryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const query = queryInput.value.trim();
+            if (!query) return;
+            
+            const database = dbSelect.value;
+            const role = roleSelect.value;
+            const chartType = chartSelect.value;
+            
+            // Add user message
+            addMessage(query, 'user');
+            queryInput.value = '';
+            sendBtn.disabled = true;
+            
+            // Show loading
+            addMessage('Analyzing your query...', 'agent', true);
+            
+            try {
+                const response = await fetch(`${API_BASE}/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        query, 
+                        database, 
+                        role,
+                        create_viz: true,
+                        chart_type: chartType === 'auto' ? null : chartType
+                    })
+                });
+                
+                // Remove loading message
+                removeLoadingMessage();
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    addMessage('✅ Query executed successfully!', 'agent');
+                    displayResults(result);
+                } else {
+                    addMessage(`❌ Error: ${result.error}`, 'agent');
+                    clearResults();
+                }
+                
+            } catch (error) {
+                removeLoadingMessage();
+                addMessage(`❌ Connection error: ${error.message}`, 'agent');
+                clearResults();
+            } finally {
+                sendBtn.disabled = false;
+            }
+        });
+
+        function addMessage(text, sender, isLoading = false) {
+            const div = document.createElement('div');
+            div.className = `p-2 rounded-lg text-sm ${
+                sender === 'user' 
+                    ? 'bg-indigo-100 text-indigo-900 ml-8' 
+                    : 'bg-gray-100 text-gray-900 mr-8'
+            }`;
+            
+            if (isLoading) {
+                div.id = 'loading-message';
+                div.innerHTML = `<span class="animate-pulse">${text}</span>`;
+            } else {
+                div.textContent = text;
+            }
+            
+            chatHistory.appendChild(div);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            const loading = document.getElementById('loading-message');
+            if (loading) loading.remove();
+        }
+
+        function displayResults(result) {
+            // Display data table
+            if (result.full_data) {
+                const data = JSON.parse(result.full_data);
+                displayDataTable(data);
+                rowCount.textContent = `${result.row_count} rows`;
+            }
+            
+            // Display visualization
+            if (result.visualization_path) {
+                const filename = result.visualization_path.split('/').pop();
+                vizContainer.innerHTML = `
+                    <img src="${OUTPUT_BASE}/${filename}" 
+                         alt="Visualization" 
+                         class="max-w-full max-h-full object-contain"
+                    >
+                `;
+                chartInfo.textContent = result.chart_type ? `Type: ${result.chart_type}` : '';
+            } else {
+                vizContainer.innerHTML = '<div class="text-gray-400">No visualization generated</div>';
+                chartInfo.textContent = '';
+            }
+            
+            // Display SQL
+            if (result.sql_query) {
+                sqlContainer.innerHTML = `<div class="sql-box">${escapeHtml(result.sql_query)}</div>`;
+            }
+            
+            // Display insights
+            if (result.insights) {
+                displayInsights(result.insights);
+            }
+        }
+
+        function displayDataTable(data) {
+            if (!data || data.length === 0) {
+                dataContainer.innerHTML = '<div class="text-gray-400 text-center py-4">No data</div>';
+                return;
+            }
+            
+            const columns = Object.keys(data[0]);
+            
+            let html = '<table><thead><tr>';
+            columns.forEach(col => {
+                html += `<th>${escapeHtml(col)}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            data.forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    const value = row[col];
+                    const displayValue = value === null ? '<span class="text-gray-400">null</span>' : escapeHtml(String(value));
+                    html += `<td>${displayValue}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            dataContainer.innerHTML = html;
+        }
+
+        function displayInsights(insights) {
+            let html = '';
+            
+            if (insights.summary) {
+                html += `<div class="mb-3"><strong class="text-indigo-600">Summary:</strong><br/>${escapeHtml(insights.summary)}</div>`;
+            }
+            
+            if (insights.key_findings && insights.key_findings.length > 0) {
+                html += '<div class="mb-3"><strong class="text-indigo-600">Key Findings:</strong><ul class="list-disc ml-4 mt-1 space-y-1">';
+                insights.key_findings.forEach(finding => {
+                    html += `<li>${escapeHtml(finding)}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            if (insights.recommendations && insights.recommendations.length > 0) {
+                html += '<div><strong class="text-indigo-600">Recommendations:</strong><ul class="list-disc ml-4 mt-1 space-y-1">';
+                insights.recommendations.forEach(rec => {
+                    html += `<li>${escapeHtml(rec)}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            insightsContainer.innerHTML = html || '<div class="text-gray-400">No insights available</div>';
+        }
+
+        function clearResults() {
+            dataContainer.innerHTML = '<div class="text-gray-400 text-center py-4">No data</div>';
+            vizContainer.innerHTML = '<div class="text-gray-400">No visualization</div>';
+            sqlContainer.innerHTML = '<div class="sql-box">No SQL query</div>';
+            insightsContainer.innerHTML = '<div class="text-gray-400">No insights</div>';
+            rowCount.textContent = '';
+            chartInfo.textContent = '';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
