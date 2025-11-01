@@ -34,7 +34,6 @@ class DatabaseManager:
         """Get database schema"""
 
         if db_name in self.schema_cache:
-            print(f"Cache Hit!!")
             return self.schema_cache[db_name]
         conn = self.get_connection(db_name)
         cursor = conn.cursor()
