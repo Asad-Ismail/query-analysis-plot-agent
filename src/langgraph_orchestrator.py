@@ -5,6 +5,8 @@ import pandas as pd
 from io import StringIO
 import time
 import logging
+from langfuse import Langfuse
+from langfuse.callback import CallbackHandler as LangfuseCallbackHandler
 from src.models import  AgentResponse, SQLQueryOutput, InsightsOutput
 from src.database_manager import DatabaseManager, PermissionManager
 from src.analysis_agent import DataAnalysisAgent
@@ -26,11 +28,17 @@ class LangGraphOrchestrator:
             style_config: Visualization styling configuration
             openai_api_base: Optional custom API base URL
         """
+
+        # Initialize Langfuse 
+        self.langfuse = Langfuse()
+        self.langfuse_handler = LangfuseCallbackHandler()
+
         # Initialize LLM
         llm_kwargs = {
             "model": "gpt-4o-mini",
             "temperature": 0,
-            "api_key": openai_api_key
+            "api_key": openai_api_key,
+            "callbacks": [self.langfuse_handler]
         }
         
         if openai_api_base:
@@ -118,7 +126,8 @@ class LangGraphOrchestrator:
         query: str,
         database: str,
         user_role: str = "analyst",
-        create_viz: bool = True
+        create_viz: bool = True,
+        session_id: str = None
     ) -> AgentResponse:
         """Process analysis request through LangGraph workflow
         
@@ -137,7 +146,20 @@ class LangGraphOrchestrator:
         logger.info(f"Processing: {query}")
         logger.info(f"Database: {database} | Role: {user_role}")
         logger.info(f"{'='*60}\n")
-        
+
+        trace = self.langfuse.trace(
+        name="query_analysis_request",
+        user_id=user_role,
+        session_id=session_id,
+        metadata={
+            "database": database,
+            "user_role": user_role,
+            "create_visualization": create_viz,
+            "query": query
+        },
+        tags=[database, user_role, "cli_request"],
+        input={"query": query})
+    
         # Initialize state
         initial_state = {
             "user_query": query,
@@ -161,12 +183,8 @@ class LangGraphOrchestrator:
         # Execute workflow
         try:
             final_state = self.graph.invoke(initial_state)
-            
-            # Build response
             execution_time = time.time() - start_time
-            
             if final_state["status"] == "success":
-                # Parse result data if present
                 data_preview = None
                 full_data_json = None
                 if final_state.get("result_data"):
@@ -186,6 +204,19 @@ class LangGraphOrchestrator:
                     chart_type=final_state.get("chart_recommendation", {}).get("chart_type") if final_state.get("chart_recommendation") else None,
                     execution_time_seconds=execution_time
                 )
+
+                trace.update(
+                output={
+                    "status": "success",
+                    "row_count": final_state.get("row_count", 0),
+                    "sql_query": final_state.get("sql_output", {}).get("sql_query") if final_state.get("sql_output") else None,
+                    "chart_type": final_state.get("chart_recommendation", {}).get("chart_type") if final_state.get("chart_recommendation") else None,
+                    "execution_time": execution_time
+                },
+                metadata={
+                    "tables_used": final_state.get("sql_output", {}).get("tables_used") if final_state.get("sql_output") else [],
+                    "visualization_created": final_state.get("visualization_path") is not None})
+
             else:
                 response = AgentResponse(
                     status="error",
@@ -194,11 +225,25 @@ class LangGraphOrchestrator:
                     execution_time_seconds=execution_time,
                     row_count=0
                 )
+                trace.update(
+                output={
+                    "status": "error",
+                    "error": final_state.get("error_message"),
+                    "execution_time": execution_time
+                },
+                level="ERROR")
             
             logger.info(f"\n Request completed in {execution_time:.2f}s")
             return response
             
         except Exception as e:
+            trace.update(
+            output={
+                "status": "error",
+                "error": str(e),
+                "execution_time": execution_time
+            },
+            level="ERROR")
             logger.error(f"Orchestration error: {str(e)}")
             return AgentResponse(
                 status="error",

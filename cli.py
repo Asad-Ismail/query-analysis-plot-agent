@@ -4,6 +4,7 @@ from dotenv import find_dotenv, load_dotenv
 import os
 from src.langgraph_orchestrator import LangGraphOrchestrator
 import sys
+import time
 
 load_dotenv(find_dotenv())
 
@@ -14,6 +15,7 @@ STYLE_CONFIG = {
     "dpi": 100
 }
 
+session_id = f"cli-{int(time.time())}"
 
 def main():
     """Main CLI entry point"""
@@ -93,7 +95,8 @@ def main():
             query=args.query,
             database=args.database,
             user_role=args.role,
-            create_viz=not args.no_viz
+            create_viz=not args.no_viz,
+            session_id = f"cli-{int(time.time())}"
         )
         
         # Display results

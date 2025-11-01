@@ -98,8 +98,6 @@ def get_agent_df(response):
     return pd.read_json(io.StringIO(response.full_data))
 
 
-# --- Test Cases ---
-
 @pytest.mark.usefixtures("cleanup_outputs")
 class TestChinookFunctional:
     
