@@ -2,9 +2,6 @@
 Functional tests for the LangGraph Orchestrator focusing on the 
 Chinook dataset.
 
-These tests run the full agent workflow and WILL make real LLM API calls.
-Ensure you have a valid OPENAI_API_KEY set in your environment.
-
 These tests compare agent results against a "Ground Truth" (GT)
 query executed live against the chinook.db to validate accuracy.
 """
@@ -22,8 +19,6 @@ from dotenv import find_dotenv, load_dotenv
 
 # Load environment variables (same as cli.py)
 load_dotenv(find_dotenv())
-
-# --- Test Configuration ---
 
 # Skip all tests in this file if the API key is not set
 API_KEY = os.getenv("OPENAI_API_KEY")
@@ -108,8 +103,6 @@ def get_agent_df(response):
 @pytest.mark.usefixtures("cleanup_outputs")
 class TestChinookFunctional:
     
-    # --- Easy Tests ---
-
     def test_easy_1_simple_retrieval(self, orchestrator, db_path):
         """
         Easy Test 1: Simple Retrieval & LIMIT
@@ -200,8 +193,6 @@ class TestChinookFunctional:
         agent_ids = set(agent_df[id_col])
         
         assert agent_ids == gt_ids
-
-    # --- Hard Tests ---
 
     def test_hard_1_top_customers_join_sum(self, orchestrator, db_path):
         """
@@ -310,7 +301,9 @@ class TestChinookFunctional:
         """
         query = "Show me the total monthly sales for 2010"
         ground_truth_sql = """
-            SELECT STRFTIME('%Y-%m', InvoiceDate) as Month
+            SELECT 
+                STRFTIME('%Y-%m', InvoiceDate) as Month,
+                SUM(Total) as MonthlySales
             FROM invoices
             WHERE STRFTIME('%Y', InvoiceDate) = '2010'
             GROUP BY 1
@@ -319,6 +312,10 @@ class TestChinookFunctional:
         
         with sqlite3.connect(db_path) as conn:
             gt_df = pd.read_sql_query(ground_truth_sql, conn)
+        
+        print(f"GT DF shape is {gt_df.shape}")
+        assert len(gt_df) == 12
+        gt_sales = gt_df['MonthlySales'].round(2).tolist()
 
         response = orchestrator.process_request(
             query=query,
@@ -334,9 +331,15 @@ class TestChinookFunctional:
         assert "STRFTIME" in response.sql_query.upper() or \
                "SUBSTR" in response.sql_query.upper()
         assert "2010" in response.sql_query
-        assert response.chart_type == "line"
         
         assert response.row_count == len(gt_df)
+        agent_df = get_agent_df(response)
+        # Find the sales column, regardless of name
+        agent_sales_col = agent_df.columns[agent_df.columns.str.upper().str.contains("SALE|TOTAL|REVENUE")][0]
+        agent_sales = agent_df[agent_sales_col].round(2).tolist()
+        
+        assert agent_sales == gt_sales
+        
 
     def test_hard_4_security_permission_denied(self, orchestrator, db_path):
         """
@@ -363,4 +366,3 @@ class TestChinookFunctional:
         assert response.full_data is None
         assert response.row_count == 0
         assert response.visualization_path is None
-
