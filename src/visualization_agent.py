@@ -8,7 +8,7 @@ import seaborn as sns
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional,Set
 import logging
 from src.models import ChartRecommendation
 
@@ -16,6 +16,8 @@ from src.models import ChartRecommendation
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Define valid chart types at the top of the file
+VALID_CHART_TYPES: Set[str] = {"bar", "line", "pie", "scatter", "table"}
 
 class VisualizationAgent:
     """Agent for creating styled visualizations with structured chart recommendations"""
@@ -48,7 +50,8 @@ class VisualizationAgent:
         self, 
         data: pd.DataFrame, 
         query: str, 
-        output_dir: str = "outputs"
+        output_dir: str = "outputs",
+        chart_type_override: Optional[str] = None
     ) -> Dict:
         """Create visualization based on data and query
         
@@ -80,8 +83,23 @@ class VisualizationAgent:
             
             # Get chart recommendation with structured output
             recommendation = self._get_chart_recommendation(data, query)
-            logger.info(f"Chart recommendation: {recommendation.chart_type}")
-            logger.info(f"Reasoning: {recommendation.reasoning}")
+            
+            if chart_type_override and chart_type_override in VALID_CHART_TYPES:
+                logger.info(f"Using user-provided chart override: {chart_type_override}")
+                recommendation = ChartRecommendation(
+                    chart_type=chart_type_override, 
+                    reasoning=f"User selected '{chart_type_override}' chart type.",
+                    x_column=None, # Will use default fallback
+                    y_column=None  # Will use default fallback
+                )
+            else:
+                if chart_type_override:
+                    # Log a warning if the override was invalid (e.g., "auto"), then fall back to AI
+                    logger.warning(f"Invalid or unhandled chart_type_override '{chart_type_override}'. Falling back to AI.")
+                
+                # Get chart recommendation with structured output
+                logger.info("Getting LLM chart recommendation...")
+                recommendation = self._get_chart_recommendation(data, query)
             
             # Create the chart
             fig, ax = plt.subplots()

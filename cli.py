@@ -135,10 +135,6 @@ def main():
                 for i, finding in enumerate(result.insights.key_findings, 1):
                     print(f"   {i}. {finding}")
                 
-                if result.insights.recommendations:
-                    print(f"\nRecommendations:")
-                    for i, rec in enumerate(result.insights.recommendations, 1):
-                        print(f"   {i}. {rec}")
             
             # Visualization
             if result.visualization_path:

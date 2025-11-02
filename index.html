@@ -342,13 +342,6 @@
                 html += '</ul></div>';
             }
             
-            if (insights.recommendations && insights.recommendations.length > 0) {
-                html += '<div><strong class="text-indigo-600">Recommendations:</strong><ul class="list-disc ml-4 mt-1 space-y-1">';
-                insights.recommendations.forEach(rec => {
-                    html += `<li>${escapeHtml(rec)}</li>`;
-                });
-                html += '</ul></div>';
-            }
             
             insightsContainer.innerHTML = html || '<div class="text-gray-400">No insights available</div>';
         }

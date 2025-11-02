@@ -31,11 +31,6 @@ class InsightsOutput(BaseModel):
     summary: str = Field(
         description="One-sentence summary of the overall finding"
     )
-    recommendations: Optional[List[str]] = Field(
-        default=None,
-        description="Optional actionable recommendations based on the data"
-    )
-
 
 class ChartRecommendation(BaseModel):
     """Structured output for chart type recommendation"""

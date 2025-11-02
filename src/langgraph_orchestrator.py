@@ -1,4 +1,4 @@
-from typing import TypedDict, Annotated, Literal
+from typing import TypedDict, Annotated, Literal,Optional
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 import pandas as pd
@@ -127,7 +127,8 @@ class LangGraphOrchestrator:
         database: str,
         user_role: str = "analyst",
         create_viz: bool = True,
-        session_id: str = None
+        session_id: str = None,
+        chart_type_override: Optional[str] = None
     ) -> AgentResponse:
         """Process analysis request through LangGraph workflow
         
@@ -177,7 +178,8 @@ class LangGraphOrchestrator:
             "insights": None,
             "chart_recommendation": None,
             "visualization_path": None,
-            "error_message": None
+            "error_message": None,
+            "chart_type_override": chart_type_override
         }
         
         # Execute workflow
@@ -386,7 +388,6 @@ class LangGraphOrchestrator:
             state["insights"] = {
                 "key_findings": insights.key_findings,
                 "summary": insights.summary,
-                "recommendations": insights.recommendations
             }
             
             logger.info(" Insights generated")
@@ -399,7 +400,6 @@ class LangGraphOrchestrator:
             state["insights"] = {
                 "key_findings": ["Insight generation failed"],
                 "summary": "Unable to generate insights",
-                "recommendations": None
             }
             return state
     
@@ -413,7 +413,8 @@ class LangGraphOrchestrator:
             
             viz_result = self.viz_agent.visualize(
                 data=df,
-                query=state["user_query"]
+                query=state["user_query"],
+                chart_type_override=state.get("chart_type_override")
             )
             
             if viz_result["status"] == "success":

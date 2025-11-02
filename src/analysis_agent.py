@@ -201,7 +201,6 @@ class DataAnalysisAgent:
             Generate:
             1. 2-4 key findings (specific observations from the data)
             2. A one-sentence summary
-            3. Optional recommendations (if applicable)
 
             Be specific with numbers and patterns you observe."""),
             ("user", """Original Question: {query}

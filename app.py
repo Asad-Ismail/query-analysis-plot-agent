@@ -71,7 +71,7 @@ def process_query():
     database = data.get('database', 'chinook')
     user_role = data.get('role', 'analyst')
     create_viz = data.get('create_viz', True)
-    chart_type = data.get('chart_type')  # Optional override
+    chart_type = data.get('chart_type')  
     
     if not query:
         return jsonify({
@@ -87,7 +87,8 @@ def process_query():
             database=database,
             user_role=user_role,
             create_viz=create_viz,
-            session_id=session_id
+            session_id=session_id,
+            chart_type_override=chart_type
         )
         
         # Convert result to dict
