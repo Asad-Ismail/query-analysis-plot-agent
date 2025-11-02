@@ -11,6 +11,8 @@ from src.models import  AgentResponse, SQLQueryOutput, InsightsOutput
 from src.database_manager import DatabaseManager, PermissionManager
 from src.analysis_agent import DataAnalysisAgent
 from src.visualization_agent import VisualizationAgent
+from src.conversation_manager import ConversationManager
+from src.intent_classifier import IntentClassifier
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,7 +37,6 @@ class LangGraphOrchestrator:
 
         # Initialize LLM
         llm_kwargs = {
-            #"model": "claude-sonnet-4.5",
             "model": "gpt-4o-mini",
             "temperature": 0,
             "api_key": openai_api_key,
@@ -52,6 +53,10 @@ class LangGraphOrchestrator:
         self.analysis_agent = DataAnalysisAgent(self.llm)
         self.viz_agent = VisualizationAgent(self.llm, style_config)
 
+        # NEW: Conversation components
+        self.conversation_manager = ConversationManager(max_history=10)
+        self.intent_classifier = IntentClassifier(self.llm)
+
         self.max_retries = 3
         self.graph = self._build_graph()
         
@@ -67,6 +72,8 @@ class LangGraphOrchestrator:
         workflow = StateGraph(dict)
         
         # Add nodes
+        workflow.add_node("classify_intent", self._classify_intent_node)  # NEW
+        workflow.add_node("handle_off_topic", self._handle_off_topic_node)  # NEW
         workflow.add_node("check_permissions", self._check_permissions_node)
         workflow.add_node("generate_sql", self._generate_sql_node)
         workflow.add_node("execute_query", self._execute_query_node)
@@ -75,10 +82,24 @@ class LangGraphOrchestrator:
         workflow.add_node("finalize_success", self._finalize_success_node)
         workflow.add_node("finalize_error", self._finalize_error_node)
         
-        # Set entry point
-        workflow.set_entry_point("check_permissions")
+        # Set entry point - NOW STARTS WITH INTENT CLASSIFICATION
+        workflow.set_entry_point("classify_intent")
         
-        # Add edges
+        # NEW: Route after intent classification
+        workflow.add_conditional_edges(
+            "classify_intent",
+            self._route_after_intent,
+            {
+                "data_query": "check_permissions",
+                "off_topic": "handle_off_topic",
+                "error": "finalize_error"
+            }
+        )
+        
+        # NEW: Off-topic goes to success
+        workflow.add_edge("handle_off_topic", "finalize_success")
+        
+        # Add edges (UNCHANGED from original)
         workflow.add_conditional_edges(
             "check_permissions",
             self._route_after_permissions,
@@ -138,11 +159,19 @@ class LangGraphOrchestrator:
             database: Database name
             user_role: User role for permissions
             create_viz: Whether to create visualization
+            session_id: Optional session ID for conversation continuity
             
         Returns:
             AgentResponse with results or error
         """
         start_time = time.time()
+        
+        # NEW: Generate session ID if not provided
+        if not session_id:
+            session_id = f"session-{int(time.time())}"
+        
+        # NEW: Get conversation context
+        context = self.conversation_manager.get_context_string(session_id, last_n=3)
         
         logger.info(f"\n{'='*60}")
         logger.info(f"Processing: {query}")
@@ -168,8 +197,11 @@ class LangGraphOrchestrator:
             "database": database,
             "user_role": user_role,
             "create_visualization": create_viz,
+            "session_id": session_id,  # NEW
+            "conversation_context": context,  # NEW
             "status": "pending",
             "current_step": "initialized",
+            "intent": None,  # NEW
             "allowed_tables": None,
             "database_schema": None,
             "sql_output": None,
@@ -187,26 +219,50 @@ class LangGraphOrchestrator:
         try:
             final_state = self.graph.invoke(initial_state)
             execution_time = time.time() - start_time
+            
             if final_state["status"] == "success":
-                data_preview = None
-                full_data_json = None
-                if final_state.get("result_data"):
-                    full_data_json = final_state.get("result_data") 
-                    df = pd.read_json(StringIO(final_state["result_data"]))
-                    data_preview = df.head(10).to_json(orient='records')
-                
-                response = AgentResponse(
-                    status="success",
-                    query=query,
-                    sql_query=final_state.get("sql_output", {}).get("sql_query") if final_state.get("sql_output") else None,
-                    data_preview=data_preview,
-                    full_data=full_data_json,
-                    row_count=final_state.get("row_count", 0),
-                    insights=final_state.get("insights"),
-                    visualization_path=final_state.get("visualization_path"),
-                    chart_type=final_state.get("chart_recommendation", {}).get("chart_type") if final_state.get("chart_recommendation") else None,
-                    execution_time_seconds=execution_time
-                )
+                # NEW: Handle off-topic separately
+                if final_state.get("intent") == "off_topic":
+                    response = AgentResponse(
+                        status="success",
+                        query=query,
+                        intent="off_topic",
+                        message=final_state.get("off_topic_message"),
+                        execution_time_seconds=execution_time,
+                        row_count=0
+                    )
+                else:
+                    # UNCHANGED: Regular data query response
+                    data_preview = None
+                    full_data_json = None
+                    if final_state.get("result_data"):
+                        full_data_json = final_state.get("result_data") 
+                        df = pd.read_json(StringIO(final_state["result_data"]))
+                        data_preview = df.head(10).to_json(orient='records')
+                    
+                    response = AgentResponse(
+                        status="success",
+                        query=query,
+                        intent=final_state.get("intent"),  # NEW
+                        sql_query=final_state.get("sql_output", {}).get("sql_query") if final_state.get("sql_output") else None,
+                        data_preview=data_preview,
+                        full_data=full_data_json,
+                        row_count=final_state.get("row_count", 0),
+                        insights=final_state.get("insights"),
+                        visualization_path=final_state.get("visualization_path"),
+                        chart_type=final_state.get("chart_recommendation", {}).get("chart_type") if final_state.get("chart_recommendation") else None,
+                        execution_time_seconds=execution_time
+                    )
+                    
+                    # NEW: Store in conversation history
+                    summary = final_state.get("insights", {}).get("summary", f"Returned {final_state.get('row_count', 0)} rows") if final_state.get("insights") else f"Returned {final_state.get('row_count', 0)} rows"
+                    self.conversation_manager.add_turn(
+                        session_id=session_id,
+                        query=query,
+                        response_summary=summary,
+                        sql_query=final_state.get("sql_output", {}).get("sql_query") if final_state.get("sql_output") else None,
+                        row_count=final_state.get("row_count", 0)
+                    )
 
                 trace.update(
                 output={
@@ -256,6 +312,45 @@ class LangGraphOrchestrator:
                 row_count=0
             )
 
+    # NEW NODE
+    def _classify_intent_node(self, state: dict) -> dict:
+        """Classify query intent"""
+        logger.info("Classifying intent...")
+        state["current_step"] = "classifying_intent"
+        
+        try:
+            intent_result = self.intent_classifier.classify(
+                query=state["user_query"],
+                conversation_context=state.get("conversation_context")
+            )
+            
+            state["intent"] = intent_result.intent
+            state["intent_reasoning"] = intent_result.reasoning
+            
+            logger.info(f"Intent: {intent_result.intent}")
+            logger.info(f"Reasoning: {intent_result.reasoning}")
+            
+            return state
+            
+        except Exception as e:
+            logger.error(f"Intent classification failed: {str(e)}")
+            state["status"] = "error"
+            state["error_message"] = f"Intent classification failed: {str(e)}"
+            return state
+    
+    # NEW NODE
+    def _handle_off_topic_node(self, state: dict) -> dict:
+        """Handle off-topic queries"""
+        logger.info("Handling off-topic query...")
+        state["current_step"] = "handling_off_topic"
+        state["status"] = "success"
+        
+        state["off_topic_message"] = (
+            "I'm a data analysis assistant. I can help you query databases and create visualizations. "
+            "Please ask me about your data!"
+        )
+        
+        return state
     
     def _check_permissions_node(self, state: dict) -> dict:
         """Check user permissions and load database schema"""
@@ -290,8 +385,13 @@ class LangGraphOrchestrator:
         state["current_step"] = "generating_sql"
         
         try:
+            # NEW: Add context hint if follow-up query
+            query_with_context = state["user_query"]
+            if state.get("intent") == "follow_up" and state.get("conversation_context"):
+                query_with_context = f"{state['user_query']}\n\nContext:\n{state['conversation_context']}"
+            
             sql_output = self.analysis_agent._generate_sql_structured(
-                query=state["user_query"],
+                query=query_with_context,
                 schema=state["database_schema"],
                 allowed_tables=state["allowed_tables"]
             )
@@ -349,6 +449,7 @@ class LangGraphOrchestrator:
         state["current_step"] = "executing_query"
         
         try:
+            import sqlite3
             conn = self.db_manager.get_connection(state["database"])
             
             df = pd.read_sql_query(state["sql_output"]["sql_query"], conn)
@@ -449,6 +550,15 @@ class LangGraphOrchestrator:
         logger.error(f" Workflow failed: {state.get('error_message')}")
         return state
     
+    # NEW ROUTING FUNCTION
+    def _route_after_intent(self, state: dict) -> Literal["data_query", "off_topic", "error"]:
+        """Route after intent classification"""
+        if state["status"] == "error":
+            return "error"
+        intent = state.get("intent")
+        if intent in ["data_query", "follow_up"]:
+            return "data_query"
+        return "off_topic"
 
     def _route_after_permissions(self, state: dict) -> Literal["continue", "error"]:
         """Route after permission check"""

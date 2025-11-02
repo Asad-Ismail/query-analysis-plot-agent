@@ -71,7 +71,8 @@ def process_query():
     database = data.get('database', 'chinook')
     user_role = data.get('role', 'analyst')
     create_viz = data.get('create_viz', True)
-    chart_type = data.get('chart_type')  
+    chart_type = data.get('chart_type')
+    session_id = data.get('session_id')  # NEW: Get session from request
     
     if not query:
         return jsonify({
@@ -79,7 +80,9 @@ def process_query():
             "error": "Query is required"
         }), 400
     
-    session_id = f"web-{int(time.time())}"
+    # NEW: Generate session if not provided
+    if not session_id:
+        session_id = f"web-{int(time.time())}"
     
     try:
         result = orchestrator.process_request(
@@ -95,6 +98,8 @@ def process_query():
         response_dict = {
             "status": result.status,
             "query": result.query,
+            "intent": result.intent,  # NEW
+            "message": result.message,  # NEW
             "sql_query": result.sql_query,
             "data_preview": result.data_preview,
             "full_data": result.full_data,
@@ -103,11 +108,37 @@ def process_query():
             "visualization_path": result.visualization_path,
             "chart_type": result.chart_type,
             "error": result.error,
-            "execution_time": result.execution_time_seconds
+            "execution_time": result.execution_time_seconds,
+            "session_id": session_id  # NEW: Return session to client
         }
         
         return jsonify(response_dict)
         
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+# NEW: Clear session endpoint
+@app.route('/api/clear_session', methods=['POST'])
+def clear_session():
+    """Clear conversation history for a session"""
+    data = request.json
+    session_id = data.get('session_id')
+    
+    if not session_id:
+        return jsonify({
+            "status": "error",
+            "error": "Session ID required"
+        }), 400
+    
+    try:
+        orchestrator.conversation_manager.clear_session(session_id)
+        return jsonify({
+            "status": "success",
+            "message": "Session cleared"
+        })
     except Exception as e:
         return jsonify({
             "status": "error",

@@ -2,13 +2,6 @@
 import argparse
 from dotenv import find_dotenv, load_dotenv
 import os
-#import ssl
-# Point to trusted certs
-#os.environ["SSL_CERT_FILE"] = "/Users/gmeax/proxy-fix-bundle/allCAbundle.pem"
-#os.environ["REQUESTS_CA_BUNDLE"] = "/Users/gmeax/proxy-fix-bundle/allCAbundle.pem"
-#custom_ssl = ssl.create_default_context(cafile="/Users/gmeax/proxy-fix-bundle/allCAbundle.pem")
-
-
 from src.langgraph_orchestrator import LangGraphOrchestrator
 import sys
 import time
@@ -33,10 +26,15 @@ def main():
         epilog="""Examples:
         %(prog)s "Show top 5 artists by sales" --database chinook
         %(prog)s "Monthly revenue for 2009" -d chinook -r analyst
-        %(prog)s "List all customers" -d northwind --no-viz """)
+        %(prog)s "List all customers" -d northwind --no-viz
+        
+        Interactive mode:
+        %(prog)s -i --database chinook
+        %(prog)s --interactive --session my-session """)
     
     parser.add_argument(
-        "query", 
+        "query",
+        nargs="?",  # NEW: Make optional for interactive mode
         help="Natural language query to analyze"
     )
     parser.add_argument(
@@ -69,6 +67,16 @@ def main():
         action="store_true",
         help="Enable verbose logging"
     )
+    # NEW: Session and interactive mode
+    parser.add_argument(
+        "--session", "-s",
+        help="Session ID for conversation continuity"
+    )
+    parser.add_argument(
+        "--interactive", "-i",
+        action="store_true",
+        help="Interactive mode for multi-turn conversations"
+    )
     
     args = parser.parse_args()
     
@@ -96,23 +104,77 @@ def main():
             openai_api_base=args.api_base
         )
         
-        # Process request
-        print(f"\n Processing query: {args.query}\n")
+        session_id = args.session or f"cli-{int(time.time())}"
         
-        result = orchestrator.process_request(
-            query=args.query,
-            database=args.database,
-            user_role=args.role,
-            create_viz=not args.no_viz,
-            session_id = f"cli-{int(time.time())}"
-        )
-        
-        # Display results
-        if result.status == "success":
-            print(f"\n{'='*60}")
-            print(" SUCCESS")
-            print(f"{'='*60}\n")
+        if args.interactive:
+            print(f"   Session: {session_id}")
+            print(f"\n Interactive Mode - Type 'exit' or 'quit' to end session\n")
             
+            while True:
+                try:
+                    query = input("You: ").strip()
+                    
+                    if query.lower() in ['exit', 'quit', 'q']:
+                        print("\nGoodbye!")
+                        break
+                    
+                    if not query:
+                        continue
+                    
+                    print()  # Blank line
+                    
+                    result = orchestrator.process_request(
+                        query=query,
+                        database=args.database,
+                        user_role=args.role,
+                        create_viz=not args.no_viz,
+                        session_id=session_id
+                    )
+                    
+                    display_result(result)
+                    
+                except KeyboardInterrupt:
+                    print("\n\nSession ended")
+                    break
+                except Exception as e:
+                    print(f"\nError: {str(e)}\n")
+        
+        # Single query mode (UNCHANGED except for session support)
+        else:
+            if not args.query:
+                print("Error: Query required in non-interactive mode. Use -i for interactive mode.")
+                sys.exit(1)
+            
+            print(f"\n Processing query: {args.query}\n")
+            
+            result = orchestrator.process_request(
+                query=args.query,
+                database=args.database,
+                user_role=args.role,
+                create_viz=not args.no_viz,
+                session_id=session_id
+            )
+            
+            display_result(result)
+            
+    except Exception as e:
+        print(f"\n Unexpected error: {str(e)}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        sys.exit(1)
+
+
+def display_result(result):
+    """Display results (factored out for reuse)"""
+    if result.status == "success":
+        print(f"\n{'='*60}")
+        print(" SUCCESS")
+        print(f"{'='*60}\n")
+        
+        if result.intent == "off_topic":
+            print(f" {result.message}\n")
+        else:
             # SQL Query
             if result.sql_query:
                 print("SQL Query:")
@@ -134,33 +196,24 @@ def main():
                 print(f"   {result.insights.summary}\n")
                 for i, finding in enumerate(result.insights.key_findings, 1):
                     print(f"   {i}. {finding}")
-                
             
             # Visualization
             if result.visualization_path:
                 print(f"\nVisualization saved: {result.visualization_path}")
                 print(f"   Chart type: {result.chart_type}")
-            
-            # Execution time
-            if result.execution_time_seconds:
-                print(f"\n Execution time: {result.execution_time_seconds:.2f}s")
-            
-            print(f"\n{'='*60}\n")
-            
-        else:
-            print(f"\n{'='*60}")
-            print(" ERROR!!")
-            print(f"{'='*60}\n")
-            print(f"   {result.error}\n")
-            print(f"{'='*60}\n")
-            sys.exit(1)
-            
-    except Exception as e:
-        print(f"\n Unexpected error: {str(e)}")
-        if args.verbose:
-            import traceback
-            traceback.print_exc()
-        sys.exit(1)
+        
+        # Execution time
+        if result.execution_time_seconds:
+            print(f"\n Execution time: {result.execution_time_seconds:.2f}s")
+        
+        print(f"\n{'='*60}\n")
+        
+    else:
+        print(f"\n{'='*60}")
+        print(" ERROR!!")
+        print(f"{'='*60}\n")
+        print(f"   {result.error}\n")
+        print(f"{'='*60}\n")
 
 
 if __name__ == "__main__":

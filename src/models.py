@@ -4,6 +4,20 @@ from pydantic import BaseModel, Field, ConfigDict
 import pandas as pd
 
 
+class IntentOutput(BaseModel):
+    """Intent classification for incoming queries"""
+    intent: Literal["data_query", "off_topic", "follow_up"] = Field(
+        description="Query intent: data_query (needs SQL), off_topic (general chat), follow_up (needs context)"
+    )
+    reasoning: str = Field(
+        description="Brief explanation of classification"
+    )
+    requires_context: bool = Field(
+        default=False,
+        description="Whether this query needs previous conversation context"
+    )
+
+
 class SQLQueryOutput(BaseModel):
     """Structured output for SQL query generation"""
     sql_query: str = Field(
@@ -60,6 +74,14 @@ class AnalysisState(BaseModel):
     user_role: str = "analyst"
     create_visualization: bool = True
     
+    # NEW: Conversation fields
+    session_id: Optional[str] = None
+    conversation_context: Optional[str] = None
+    
+    # NEW: Intent classification
+    intent: Optional[str] = None
+    intent_reasoning: Optional[str] = None
+    
     # Intermediate fields
     allowed_tables: Optional[List[str]] = None
     database_schema: Optional[dict] = None
@@ -98,3 +120,6 @@ class AgentResponse(BaseModel):
     chart_type: Optional[str] = None
     error: Optional[str] = None
     execution_time_seconds: Optional[float] = None
+    
+    intent: Optional[str] = None
+    message: Optional[str] = None
