@@ -8,7 +8,6 @@ import time
 
 load_dotenv(find_dotenv())
 
-
 # Style configuration for visualizations
 STYLE_CONFIG = {
     "colors": ["#2E86AB", "#A23B72", "#F18F01", "#C73E1D", "#6A994E"],
@@ -67,7 +66,7 @@ def main():
         action="store_true",
         help="Enable verbose logging"
     )
-    # NEW: Session and interactive mode
+    
     parser.add_argument(
         "--session", "-s",
         help="Session ID for conversation continuity"

@@ -39,19 +39,73 @@
             grid-template-columns: 320px 1fr 320px;
             height: calc(100vh - 80px);
         }
+        
+        .chat-message {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .user-message {
+            background-color: #dbeafe;
+            margin-left: 20px;
+            text-align: left;
+        }
+        
+        .agent-message {
+            background-color: #f3f4f6;
+            margin-right: 20px;
+            text-align: left;
+        }
+        
+        .off-topic-message {
+            background-color: #fef3c7;
+            margin-right: 20px;
+            padding: 12px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        /* Fix left panel layout */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .settings-section {
+            flex-shrink: 0;
+        }
+        
+        .chat-section {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        
+        .input-section {
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
     
-    <header class="bg-indigo-600 text-white p-5 shadow-lg text-center">
-        <h1 class="text-3xl font-bold">Data Analysis Agent</h1>
+    <header class="bg-indigo-600 text-white p-5 shadow-lg">
+        <div class="flex justify-between items-center max-w-7xl mx-auto">
+            <div class="w-32"></div>
+            <h1 class="text-3xl font-bold">Data Analysis Agent</h1>
+            <button id="clear-session-btn" class="bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded text-xs font-semibold">
+                Clear Session
+            </button>
+        </div>
     </header>
 
     <div class="main-grid">
         
-        <div class="bg-white border-r border-gray-200 flex flex-col">
+        <div class="bg-white border-r border-gray-200 left-panel">
             
-            <div class="p-4 border-b border-gray-200 bg-gray-50">
+            <div class="settings-section p-4 border-b border-gray-200 bg-gray-50">
                 <label class="block text-sm font-semibold mb-2">Database</label>
                 <select id="database-select" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
                     <option value="chinook">chinook (Music Store)</option>
@@ -74,15 +128,20 @@
                     <option value="pie">Pie Chart</option>
                     <option value="scatter">Scatter Plot</option>
                 </select>
+                
+                <div class="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                    <div class="font-semibold text-blue-800 mb-1">Session Active</div>
+                    <div id="session-info" class="text-blue-600">No session</div>
+                </div>
             </div>
             
-            <div id="chat-history" class="flex-1 p-4 overflow-y-auto scrollbar-thin space-y-3">
+            <div id="chat-history" class="chat-section p-4 space-y-2">
                 <div class="text-sm text-gray-500 text-center py-4">
                     Ask the agent...
                 </div>
             </div>
             
-            <div class="p-4 border-t border-gray-200 bg-gray-50">
+            <div class="input-section p-4 border-t border-gray-200 bg-gray-50">
                 <form id="query-form" class="space-y-2">
                     <textarea
                         id="query-input"
@@ -106,7 +165,7 @@
             
             <div class="flex-1 border-b border-gray-200 overflow-hidden flex flex-col">
                 <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                    <h2 class="font-semibold text-gray-700">📊 Query Results</h2>
+                    <h2 class="font-semibold text-gray-700">Query Results</h2>
                     <span id="row-count" class="text-sm text-gray-500"></span>
                 </div>
                 <div id="data-container" class="flex-1 overflow-auto scrollbar-thin p-4">
@@ -116,7 +175,7 @@
             
             <div class="flex-1 overflow-hidden flex flex-col">
                 <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                    <h2 class="font-semibold text-gray-700">📈 Visualization</h2>
+                    <h2 class="font-semibold text-gray-700">Visualization</h2>
                     <span id="chart-info" class="text-sm text-gray-500"></span>
                 </div>
                 <div id="viz-container" class="flex-1 overflow-auto scrollbar-thin p-4 flex items-center justify-center">
@@ -127,7 +186,8 @@
 
         <div class="bg-white border-l border-gray-200 flex flex-col overflow-hidden">
             
-            <div class="bg-gray-50"> <button 
+            <div class="bg-gray-50">
+                <button 
                     id="toggle-sql-btn" 
                     class="w-full p-3 text-left font-semibold text-gray-700 hover:bg-gray-100 flex justify-between items-center"
                 >
@@ -139,14 +199,16 @@
                 </div>
             </div>
 
-            <div class="border-t border-gray-200 bg-gray-50 flex-1 flex flex-col"> <button 
+            <div class="border-t border-gray-200 bg-gray-50 flex-1 flex flex-col">
+                <button 
                     id="toggle-insights-btn" 
                     class="w-full p-3 text-left font-semibold text-gray-700 hover:bg-gray-100 flex justify-between items-center"
                 >
-                    <span>💡 Insights</span>
+                    <span>Insights</span>
                     <span id="insights-arrow" class="text-gray-400">▼</span>
                 </button>
-                <div id="insights-container" class="hidden p-4 overflow-y-auto scrollbar-thin text-sm flex-1"> <div class="text-gray-400">No insights yet</div>
+                <div id="insights-container" class="hidden p-4 overflow-y-auto scrollbar-thin text-sm flex-1">
+                    <div class="text-gray-400">No insights yet</div>
                 </div>
             </div>
         </div>
@@ -156,7 +218,8 @@
         const API_BASE = 'http://127.0.0.1:5000/api';
         const OUTPUT_BASE = 'http://127.0.0.1:5000/outputs';
 
-        // Elements
+        let currentSessionId = null;
+        
         const dbSelect = document.getElementById('database-select');
         const roleSelect = document.getElementById('role-select');
         const chartSelect = document.getElementById('chart-select');
@@ -174,20 +237,57 @@
         const toggleInsightsBtn = document.getElementById('toggle-insights-btn');
         const sqlArrow = document.getElementById('sql-arrow');
         const insightsArrow = document.getElementById('insights-arrow');
+        const sessionInfo = document.getElementById('session-info');
+        const clearSessionBtn = document.getElementById('clear-session-btn');
 
-        // Toggle SQL panel
         toggleSqlBtn.addEventListener('click', () => {
             sqlContainer.classList.toggle('hidden');
             sqlArrow.textContent = sqlContainer.classList.contains('hidden') ? '▼' : '▲';
         });
 
-        // Toggle Insights panel
         toggleInsightsBtn.addEventListener('click', () => {
             insightsContainer.classList.toggle('hidden');
             insightsArrow.textContent = insightsContainer.classList.contains('hidden') ? '▼' : '▲';
         });
 
-        // Handle query submission
+        clearSessionBtn.addEventListener('click', async () => {
+            if (!currentSessionId) {
+                alert('No active session');
+                return;
+            }
+            
+            if (!confirm('Clear conversation history?')) {
+                return;
+            }
+            
+            try {
+                await fetch(`${API_BASE}/clear_session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: currentSessionId })
+                });
+                
+                currentSessionId = null;
+                updateSessionInfo();
+                
+                chatHistory.innerHTML = '<div class="text-sm text-gray-500 text-center py-4">Ask the agent...</div>';
+                clearResults();
+                
+            } catch (error) {
+                console.error('Failed to clear session:', error);
+                alert('Failed to clear session');
+            }
+        });
+
+        function updateSessionInfo() {
+            if (currentSessionId) {
+                const shortId = currentSessionId.substring(0, 12) + '...';
+                sessionInfo.textContent = shortId;
+            } else {
+                sessionInfo.textContent = 'No session';
+            }
+        }
+
         queryForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -198,12 +298,10 @@
             const role = roleSelect.value;
             const chartType = chartSelect.value;
             
-            // Add user message
             addMessage(query, 'user');
             queryInput.value = '';
             sendBtn.disabled = true;
             
-            // Show loading
             addMessage('Analyzing your query...', 'agent', true);
             
             try {
@@ -215,26 +313,36 @@
                         database, 
                         role,
                         create_viz: true,
-                        chart_type: chartType === 'auto' ? null : chartType
+                        chart_type: chartType === 'auto' ? null : chartType,
+                        session_id: currentSessionId
                     })
                 });
                 
-                // Remove loading message
                 removeLoadingMessage();
                 
                 const result = await response.json();
                 
+                if (result.session_id) {
+                    currentSessionId = result.session_id;
+                    updateSessionInfo();
+                }
+                
                 if (result.status === 'success') {
-                    addMessage('✅ Query executed successfully!', 'agent');
-                    displayResults(result);
+                    if (result.intent === 'off_topic') {
+                        addMessage(result.message, 'off-topic');
+                        clearResults();
+                    } else {
+                        addMessage('Query executed successfully!', 'agent');
+                        displayResults(result);
+                    }
                 } else {
-                    addMessage(`❌ Error: ${result.error}`, 'agent');
+                    addMessage(`Error: ${result.error}`, 'agent');
                     clearResults();
                 }
                 
             } catch (error) {
                 removeLoadingMessage();
-                addMessage(`❌ Connection error: ${error.message}`, 'agent');
+                addMessage(`Connection error: ${error.message}`, 'agent');
                 clearResults();
             } finally {
                 sendBtn.disabled = false;
@@ -243,16 +351,19 @@
 
         function addMessage(text, sender, isLoading = false) {
             const div = document.createElement('div');
-            div.className = `p-2 rounded-lg text-sm ${
-                sender === 'user' 
-                    ? 'bg-indigo-100 text-indigo-900 ml-8' 
-                    : 'bg-gray-100 text-gray-900 mr-8'
-            }`;
             
             if (isLoading) {
                 div.id = 'loading-message';
-                div.innerHTML = `<span class="animate-pulse">${text}</span>`;
+                div.className = 'chat-message agent-message';
+                div.innerHTML = `<span class="animate-pulse">${escapeHtml(text)}</span>`;
+            } else if (sender === 'user') {
+                div.className = 'chat-message user-message';
+                div.textContent = text;
+            } else if (sender === 'off-topic') {
+                div.className = 'off-topic-message';
+                div.textContent = text;
             } else {
+                div.className = 'chat-message agent-message';
                 div.textContent = text;
             }
             
@@ -266,18 +377,16 @@
         }
 
         function displayResults(result) {
-            // Display data table
             if (result.full_data) {
                 const data = JSON.parse(result.full_data);
                 displayDataTable(data);
                 rowCount.textContent = `${result.row_count} rows`;
             }
             
-            // Display visualization
             if (result.visualization_path) {
                 const filename = result.visualization_path.split('/').pop();
                 vizContainer.innerHTML = `
-                    <img src="${OUTPUT_BASE}/${filename}" 
+                    <img src="${OUTPUT_BASE}/${filename}?t=${Date.now()}" 
                          alt="Visualization" 
                          class="max-w-full max-h-full object-contain"
                     >
@@ -288,12 +397,10 @@
                 chartInfo.textContent = '';
             }
             
-            // Display SQL
             if (result.sql_query) {
                 sqlContainer.innerHTML = `<div class="sql-box">${escapeHtml(result.sql_query)}</div>`;
             }
             
-            // Display insights
             if (result.insights) {
                 displayInsights(result.insights);
             }
@@ -341,7 +448,6 @@
                 });
                 html += '</ul></div>';
             }
-            
             
             insightsContainer.innerHTML = html || '<div class="text-gray-400">No insights available</div>';
         }

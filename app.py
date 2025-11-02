@@ -98,8 +98,8 @@ def process_query():
         response_dict = {
             "status": result.status,
             "query": result.query,
-            "intent": result.intent,  # NEW
-            "message": result.message,  # NEW
+            "intent": result.intent,  
+            "message": result.message, 
             "sql_query": result.sql_query,
             "data_preview": result.data_preview,
             "full_data": result.full_data,

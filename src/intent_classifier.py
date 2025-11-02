@@ -30,29 +30,28 @@ class IntentClassifier:
         prompt = ChatPromptTemplate.from_messages([
             ("system", """You are an intent classifier for a data analysis system.
 
-Classify queries into:
+                Classify queries into:
 
-1. **data_query**: Questions about data that need database queries
-   - "Show top 5 customers"
-   - "What's the total revenue?"
-   - "List all products"
+                1. **data_query**: Questions about data that need database queries
+                - "Show top 5 customers"
+                - "What's the total revenue?"
+                - "List all products"
 
-2. **follow_up**: Queries referencing previous results
-   - "Show me more"
-   - "What about 2011?" (when 2010 was just queried)
-   - "Break that down by region"
+                2. **follow_up**: Queries referencing previous results
+                - "Show me more"
+                - "What about 2011?" (when 2010 was just queried)
+                - "Break that down by region"
 
-3. **off_topic**: General questions not related to data analysis
-   - "What's the meaning of life?"
-   - "How do I cook pasta?"
-   - "Tell me a joke"
-   - Greetings like "hello" should be treated as off_topic
+                3. **off_topic**: General questions not related to data analysis
+                - "What's the meaning of life?"
+                - "Tell me a joke"
+                - Greetings like "hello" should be treated as off_topic
 
-IMPORTANT: 
-- If query references previous results ("more", "also", "what about"), mark requires_context=True
-- Be strict: only data_query if it clearly needs database access"""),
-            ("user", "Query: {query}{context}")
-        ])
+                IMPORTANT: 
+                - If query references previous results ("more", "also", "what about"), mark requires_context=True
+                - Be strict: only data_query if it clearly needs database access"""),
+                ("user", "Query: {query}{context}")
+                ])
         
         structured_llm = self.llm.with_structured_output(IntentOutput)
         
