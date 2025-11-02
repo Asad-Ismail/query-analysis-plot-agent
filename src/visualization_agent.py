@@ -16,7 +16,6 @@ from src.models import ChartRecommendation
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define valid chart types at the top of the file
 VALID_CHART_TYPES: Set[str] = {"bar", "line", "pie", "scatter", "table"}
 
 class VisualizationAgent:

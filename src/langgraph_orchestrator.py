@@ -35,6 +35,7 @@ class LangGraphOrchestrator:
 
         # Initialize LLM
         llm_kwargs = {
+            #"model": "claude-sonnet-4.5",
             "model": "gpt-4o-mini",
             "temperature": 0,
             "api_key": openai_api_key,
