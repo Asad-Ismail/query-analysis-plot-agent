@@ -81,26 +81,28 @@ class VisualizationAgent:
                     "error": "Need at least 2 columns for visualization"
                 }
             
-            # Get chart recommendation with structured output
-            recommendation = self._get_chart_recommendation(data, query)
-            
             if chart_type_override and chart_type_override in VALID_CHART_TYPES:
-                logger.info(f"Using user-provided chart override: {chart_type_override}")
+                logger.info(f"User override '{chart_type_override}' detected. Getting AI column suggestions first...")
+                # Get AI recommendation *only for its column suggestions*
+                ai_recommendation = self._get_chart_recommendation(data, query)
+                
+                logger.info(f"Applying user chart type '{chart_type_override}' with AI-suggested columns.")
                 recommendation = ChartRecommendation(
-                    chart_type=chart_type_override, 
+                    chart_type=chart_type_override,
                     reasoning=f"User selected '{chart_type_override}' chart type.",
-                    x_column=None, # Will use default fallback
-                    y_column=None  # Will use default fallback
+                    x_column=ai_recommendation.x_column,  
+                    y_column=ai_recommendation.y_column  
                 )
+
             else:
                 if chart_type_override:
                     # Log a warning if the override was invalid (e.g., "auto"), then fall back to AI
                     logger.warning(f"Invalid or unhandled chart_type_override '{chart_type_override}'. Falling back to AI.")
                 
-                # Get chart recommendation with structured output
+                # Default behavior: Get the AI's full recommendation
                 logger.info("Getting LLM chart recommendation...")
                 recommendation = self._get_chart_recommendation(data, query)
-            
+
             # Create the chart
             fig, ax = plt.subplots()
             
