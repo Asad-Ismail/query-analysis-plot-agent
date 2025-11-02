@@ -2,11 +2,19 @@
 import argparse
 from dotenv import find_dotenv, load_dotenv
 import os
+#import ssl
+# Point to trusted certs
+#os.environ["SSL_CERT_FILE"] = "/Users/gmeax/proxy-fix-bundle/allCAbundle.pem"
+#os.environ["REQUESTS_CA_BUNDLE"] = "/Users/gmeax/proxy-fix-bundle/allCAbundle.pem"
+#custom_ssl = ssl.create_default_context(cafile="/Users/gmeax/proxy-fix-bundle/allCAbundle.pem")
+
+
 from src.langgraph_orchestrator import LangGraphOrchestrator
 import sys
 import time
 
 load_dotenv(find_dotenv())
+
 
 # Style configuration for visualizations
 STYLE_CONFIG = {

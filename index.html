@@ -43,18 +43,14 @@
 </head>
 <body class="bg-gray-100">
     
-    <!-- Header -->
-    <header class="bg-indigo-600 text-white p-5 shadow-lg">
+    <header class="bg-indigo-600 text-white p-5 shadow-lg text-center">
         <h1 class="text-3xl font-bold">Data Analysis Agent</h1>
     </header>
 
-    <!-- Main 3-Column Grid -->
     <div class="main-grid">
         
-        <!-- LEFT COLUMN: Controls + Chat -->
         <div class="bg-white border-r border-gray-200 flex flex-col">
             
-            <!-- Database Controls -->
             <div class="p-4 border-b border-gray-200 bg-gray-50">
                 <label class="block text-sm font-semibold mb-2">Database</label>
                 <select id="database-select" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
@@ -80,14 +76,12 @@
                 </select>
             </div>
             
-            <!-- Chat History -->
             <div id="chat-history" class="flex-1 p-4 overflow-y-auto scrollbar-thin space-y-3">
                 <div class="text-sm text-gray-500 text-center py-4">
                     Ask the agent...
                 </div>
             </div>
             
-            <!-- Large Input Area -->
             <div class="p-4 border-t border-gray-200 bg-gray-50">
                 <form id="query-form" class="space-y-2">
                     <textarea
@@ -108,10 +102,8 @@
             </div>
         </div>
 
-        <!-- MIDDLE COLUMN: Data + Visualization -->
         <div class="bg-white flex flex-col overflow-hidden">
             
-            <!-- Data Table (Top Half) -->
             <div class="flex-1 border-b border-gray-200 overflow-hidden flex flex-col">
                 <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
                     <h2 class="font-semibold text-gray-700">📊 Query Results</h2>
@@ -122,7 +114,6 @@
                 </div>
             </div>
             
-            <!-- Visualization (Bottom Half) -->
             <div class="flex-1 overflow-hidden flex flex-col">
                 <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
                     <h2 class="font-semibold text-gray-700">📈 Visualization</h2>
@@ -134,26 +125,13 @@
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: Schema + SQL + Insights -->
         <div class="bg-white border-l border-gray-200 flex flex-col overflow-hidden">
             
-            <!-- Schema (Takes most space) -->
-            <div class="flex-1 overflow-hidden flex flex-col">
-                <div class="p-3 bg-gray-50 border-b border-gray-200">
-                    <h2 class="font-semibold text-gray-700">🗄️ Database Schema</h2>
-                </div>
-                <div id="schema-container" class="flex-1 overflow-y-auto scrollbar-thin p-4 text-sm">
-                    <div class="text-gray-400">Loading schema...</div>
-                </div>
-            </div>
-
-            <!-- SQL Query Display (Collapsible) -->
-            <div class="border-t border-gray-200 bg-gray-50">
-                <button 
+            <div class="bg-gray-50"> <button 
                     id="toggle-sql-btn" 
                     class="w-full p-3 text-left font-semibold text-gray-700 hover:bg-gray-100 flex justify-between items-center"
                 >
-                    <span>💻 Generated SQL</span>
+                    <span>Generated SQL</span>
                     <span id="sql-arrow" class="text-gray-400">▼</span>
                 </button>
                 <div id="sql-container" class="hidden p-4 max-h-60 overflow-y-auto scrollbar-thin">
@@ -161,17 +139,14 @@
                 </div>
             </div>
 
-            <!-- Insights (Collapsible) -->
-            <div class="border-t border-gray-200 bg-gray-50">
-                <button 
+            <div class="border-t border-gray-200 bg-gray-50 flex-1 flex flex-col"> <button 
                     id="toggle-insights-btn" 
                     class="w-full p-3 text-left font-semibold text-gray-700 hover:bg-gray-100 flex justify-between items-center"
                 >
                     <span>💡 Insights</span>
                     <span id="insights-arrow" class="text-gray-400">▼</span>
                 </button>
-                <div id="insights-container" class="hidden p-4 max-h-60 overflow-y-auto scrollbar-thin text-sm">
-                    <div class="text-gray-400">No insights yet</div>
+                <div id="insights-container" class="hidden p-4 overflow-y-auto scrollbar-thin text-sm flex-1"> <div class="text-gray-400">No insights yet</div>
                 </div>
             </div>
         </div>
@@ -191,7 +166,6 @@
         const chatHistory = document.getElementById('chat-history');
         const dataContainer = document.getElementById('data-container');
         const vizContainer = document.getElementById('viz-container');
-        const schemaContainer = document.getElementById('schema-container');
         const sqlContainer = document.getElementById('sql-container');
         const insightsContainer = document.getElementById('insights-container');
         const rowCount = document.getElementById('row-count');
@@ -212,49 +186,6 @@
             insightsContainer.classList.toggle('hidden');
             insightsArrow.textContent = insightsContainer.classList.contains('hidden') ? '▼' : '▲';
         });
-
-        // Load schema on database change
-        dbSelect.addEventListener('change', loadSchema);
-
-        // Load initial schema
-        loadSchema();
-
-        async function loadSchema() {
-            const database = dbSelect.value;
-            
-            try {
-                const response = await fetch(`${API_BASE}/schema`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ database })
-                });
-                
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    displaySchema(data.schema);
-                } else {
-                    schemaContainer.innerHTML = `<div class="text-red-500">Error: ${data.error}</div>`;
-                }
-            } catch (error) {
-                schemaContainer.innerHTML = `<div class="text-red-500">Failed to load schema</div>`;
-            }
-        }
-
-        function displaySchema(schema) {
-            let html = '';
-            for (const [table, columns] of Object.entries(schema)) {
-                html += `
-                    <div class="mb-4">
-                        <div class="font-semibold text-indigo-600">${table}</div>
-                        <div class="ml-3 text-gray-600 text-xs space-y-1">
-                            ${columns.map(col => `<div>• ${col}</div>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-            schemaContainer.innerHTML = html;
-        }
 
         // Handle query submission
         queryForm.addEventListener('submit', async (e) => {

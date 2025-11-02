@@ -17,4 +17,4 @@ pytest -s -v tests/test_functional_chinook.py
 
 python app.py
 
-index.html 
+Open index.html 
