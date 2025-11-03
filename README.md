@@ -5,7 +5,7 @@ Intelligent data analysis system that converts natural language queries into SQL
 ## Features
 
 - **Natural Language to SQL**: Ask questions in plain English, get accurate SQL queries
-- **Multi-Database Support**: Works with Chinook, Sakila, and Northwind databases and can be extended to new databases
+- **Multi-Database Support**: Works with Chinook, Can be extended to new databases easily
 - **Intelligent Visualizations**: Auto-generates appropriate charts (bar, line, pie, scatter)
 - **Role-Based Security**: Fine-grained table access control by user role
 - **Conversation Memory**: Multi-turn conversations with context awareness
