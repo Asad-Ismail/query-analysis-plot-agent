@@ -1,6 +1,6 @@
 """Pydantic models for structured outputs and state management"""
 from typing import Optional, List, Literal
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 
 class IntentOutput(BaseModel):
     """Intent classification for incoming queries"""
@@ -60,50 +60,6 @@ class ChartRecommendation(BaseModel):
         default=None,
         description="Recommended column for y-axis (if applicable)"
     )
-
-
-class AnalysisState(BaseModel):
-    """State object for LangGraph workflow"""
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    
-    # Input fields
-    user_query: str
-    database: str
-    user_role: str = "analyst"
-    create_visualization: bool = True
-    
-    # Conversation fields
-    session_id: Optional[str] = None
-    conversation_context: Optional[str] = None
-    
-    # Intent classification
-    intent: Optional[str] = None
-    intent_reasoning: Optional[str] = None
-    
-    # Intermediate fields
-    allowed_tables: Optional[List[str]] = None
-    database_schema: Optional[dict] = None
-    
-    # SQL generation
-    sql_output: Optional[SQLQueryOutput] = None
-    sql_validated: bool = False
-    
-    # Data results
-    result_data: Optional[str] = None  # JSON string of DataFrame
-    row_count: int = 0
-    
-    # Analysis
-    insights: Optional[InsightsOutput] = None
-    
-    # Visualization
-    chart_recommendation: Optional[ChartRecommendation] = None
-    visualization_path: Optional[str] = None
-    
-    # Status tracking
-    status: Literal["pending", "processing", "success", "error"] = "pending"
-    error_message: Optional[str] = None
-    current_step: str = "initialized"
-
 
 class AgentResponse(BaseModel):
     """Final response model for API/CLI"""

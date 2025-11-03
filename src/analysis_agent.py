@@ -29,85 +29,6 @@ class DataAnalysisAgent:
         self.llm = llm
         logger.info("DataAnalysisAgent initialized")
     
-    def analyze(
-        self, 
-        query: str, 
-        conn, 
-        schema: Dict[str, dict],
-        allowed_tables: Optional[List[str]] = None
-    ) -> Dict:
-        """Main analysis workflow with structured outputs
-        
-        Args:
-            query: Natural language query from user
-            conn: Database connection object
-            schema: Database schema as dict {table_name: [column_names]}
-            allowed_tables: List of tables user has permission to access
-            
-        Returns:
-            Dict with status, data, insights, and metadata
-        """
-        try:
-            logger.info(f"Starting analysis for query: {query}")
-            
-            # Generate SQL with structured output
-            sql_output = self._generate_sql_structured(query, schema, allowed_tables)
-            logger.info(f"Generated SQL: {sql_output.sql_query}")
-            
-            # Safety validation
-            if not self._is_safe_query(sql_output.sql_query):
-                logger.warning("Unsafe query detected")
-                return {
-                    "status": "error",
-                    "error": "Query contains unsafe operations (DROP, DELETE, UPDATE, etc.)",
-                    "query": query
-                }
-            
-            # Validate tables used are allowed
-            if allowed_tables and not self._validate_table_access(
-                sql_output.tables_used, allowed_tables
-            ):
-                logger.warning("Permission denied for tables")
-                return {
-                    "status": "error",
-                    "error": f"Access denied to tables: {sql_output.tables_used}",
-                    "query": query
-                }
-            
-            # Execute query
-            df = pd.read_sql_query(sql_output.sql_query, conn)
-            logger.info(f"Query executed successfully: {len(df)} rows returned")
-            
-            # Generate insights with structured output
-            insights = self._generate_insights_structured(query, df, sql_output.explanation)
-            logger.info("Insights generated successfully")
-            
-            return {
-                "status": "success",
-                "query": query,
-                "sql": sql_output.sql_query,
-                "sql_explanation": sql_output.explanation,
-                "tables_used": sql_output.tables_used,
-                "data": df,
-                "row_count": len(df),
-                "insights": insights
-            }
-            
-        except pd.errors.DatabaseError as e:
-            logger.error(f"Database error: {str(e)}")
-            return {
-                "status": "error",
-                "error": f"Database error: {str(e)}",
-                "query": query
-            }
-        except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}")
-            return {
-                "status": "error",
-                "error": f"Analysis failed: {str(e)}",
-                "query": query
-            }
-    
     def _generate_sql_structured(
         self, 
         query: str, 
@@ -116,7 +37,6 @@ class DataAnalysisAgent:
         error_history: Optional[List[str]] = None
     ) -> SQLQueryOutput:
         """Generate SQL using LLM with structured output
-        
         Args:
             query: User's natural language query
             schema: Full database schema
@@ -227,7 +147,7 @@ class DataAnalysisAgent:
         return result
     
     def _format_schema(self, schema: Dict[str, dict]) -> str: 
-            """Format schema with types and foreign keys for prompt"""
+            """Format schema with types for prompt"""
             lines = []
             for table_name, table_info in schema.items():
                 lines.append(f"Table: {table_name}")

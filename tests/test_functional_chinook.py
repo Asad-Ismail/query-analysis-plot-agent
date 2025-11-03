@@ -79,7 +79,6 @@ def cleanup_outputs():
         print(f"\nCleaning up '{output_dir}' directory...")
         shutil.rmtree(output_dir)
 
-# --- Helper Function ---
 
 def load_json_data(json_string: str):
     """Helper to parse the data_preview or full_data string."""

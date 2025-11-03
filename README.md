@@ -2,7 +2,7 @@
 
 Intelligent data analysis system that converts natural language queries into SQL, executes them, generates insights, and creates visualizations.
 
-## Features
+## Features:
 
 - **Natural Language to SQL**: Ask questions in plain English, get accurate SQL queries
 - **Multi-Database Support**: Works with Chinook, Can be extended to new databases easily
@@ -13,11 +13,11 @@ Intelligent data analysis system that converts natural language queries into SQL
 - **Self-Healing/Correction SQL**: Automatic retry with error correction on query failures
 - **Observability**: Langfuse integration for tracing and monitoring
 
-## Architecture
+## Architecture:
 
 We are using Langgraph framework to orchestrate the workflow for agents
 
-### LangGraph Workflow
+### LangGraph Workflow:
 
 <p align="center">
   <img src="vis/langgraph_workflow.png" alt="Logo" width="250">
@@ -31,14 +31,14 @@ We are using Langgraph framework to orchestrate the workflow for agents
 - **Conversation Manager**: Maintains session context for follow-ups
 - **Permission Manager**: Enforces role-based table access
 
-## Demo
+## Demo:
 
 [Click to watch the demo video](vis/demo_agent.mp4)
 
 
 ## 🚀 Quick Start
 
-### Installation
+### Installation:
 ```bash
 # Clone the repository
 git clone https://github.com/Asad-Ismail/query-analysis-plot-agent.git
@@ -51,7 +51,7 @@ pip install -r requirements.txt
 bash uv_install.sh
 ```
 
-### Configuration
+### Configuration:
 
 Create a `.env` file:
 ```env
@@ -62,7 +62,13 @@ LANGFUSE_PUBLIC_KEY = langfuse_key_here
 LANGFUSE_BASE_URL = langfuse_base_url
 ```
 
-### Usage
+### Dataset Setup:
+
+Download one or more of the test sql database from [here](https://www.timestored.com/data/sample/sqlite) 
+
+Place them in the root `data/` directory 
+
+### Usage:
 
 #### CLI Mode
 ```bash
@@ -85,7 +91,7 @@ open index.html
 
 Access at `http://localhost:5000`
 
-##  Example Queries
+##  Example Queries:
 ```bash
 # Simple retrieval
 "Show me top 3 artists by revenue"
@@ -100,7 +106,8 @@ Access at `http://localhost:5000`
 ```
 
 
-## Testing
+## Testing:
+
 ```bash
 # Run functional tests
 pytest -s -v tests/test_functional_chinook.py

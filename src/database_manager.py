@@ -46,7 +46,19 @@ class DatabaseManager:
             cursor.execute(f"PRAGMA table_info({table})")
             columns_info = cursor.fetchall()
             columns = [{'name': col[1], 'type': col[2]} for col in columns_info]
-            schema[table] = {'columns': columns}#'foreign_keys': foreign_keys}
+            '''
+            cursor.execute(f"PRAGMA foreign_key_list({table})")
+            fk_info = cursor.fetchall()
+            foreign_keys = [
+                {
+                    'from': fk[3],
+                    'to_table': fk[2],
+                    'to_column': fk[4]
+                } for fk in fk_info
+            ]
+            '''
+            schema[table] = {'columns': columns}
+            #'foreign_keys': foreign_keys}
         
         conn.close()
         self.schema_cache[db_name] = schema

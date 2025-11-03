@@ -242,7 +242,7 @@ class LangGraphOrchestrator:
                     response = AgentResponse(
                         status="success",
                         query=query,
-                        intent=final_state.get("intent"),  # NEW
+                        intent=final_state.get("intent"), 
                         sql_query=final_state.get("sql_output", {}).get("sql_query") if final_state.get("sql_output") else None,
                         data_preview=data_preview,
                         full_data=full_data_json,
@@ -381,7 +381,6 @@ class LangGraphOrchestrator:
         state["current_step"] = "generating_sql"
         
         try:
-            # NEW: Add context hint if follow-up query
             query_with_context = state["user_query"]
             if state.get("intent") == "follow_up" and state.get("conversation_context"):
                 query_with_context = f"{state['user_query']}\n\nContext:\n{state['conversation_context']}"
@@ -389,7 +388,8 @@ class LangGraphOrchestrator:
             sql_output = self.analysis_agent._generate_sql_structured(
                 query=query_with_context,
                 schema=state["database_schema"],
-                allowed_tables=state["allowed_tables"]
+                allowed_tables=state["allowed_tables"],
+                error_history=state.get("error_history")
             )
             
             # Validate SQL safety
@@ -399,9 +399,9 @@ class LangGraphOrchestrator:
                 print(f"Output query is {query_lower}")
 
                 if not query_lower:
-                    logger.warning(f"OOD query detected!")
+                    logger.warning(f"OOD Input detected!")
                     state["status"] = "error"
-                    state["error_message"] = "Out of Domain Query. Please ask relevan questions!"
+                    state["error_message"] = "Out of Domain Input. Please ask relevan questions!"
 
                 elif query_lower.startswith(('error', 'sorry', 'cannot', 'access denied')):
                     logger.warning(f"LLM returned a soft error: {sql_output.sql_query}")
