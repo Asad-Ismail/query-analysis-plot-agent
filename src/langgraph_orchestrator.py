@@ -1,3 +1,4 @@
+import io
 from typing import TypedDict, Annotated, Literal,Optional
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
@@ -13,6 +14,7 @@ from src.analysis_agent import DataAnalysisAgent
 from src.visualization_agent import VisualizationAgent
 from src.conversation_manager import ConversationManager
 from src.intent_classifier import IntentClassifier
+#from PIL import Image
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -58,6 +60,11 @@ class LangGraphOrchestrator:
 
         self.max_retries = 3
         self.graph = self._build_graph()
+
+        #graph_png = self.graph.get_graph().draw_mermaid_png()
+        #output_path="langgraph_workflow.png"
+        #image = Image.open(io.BytesIO(graph_png))
+        #image.save(output_path)
         
         logger.info("LangGraph Orchestrator initialized!")
     
