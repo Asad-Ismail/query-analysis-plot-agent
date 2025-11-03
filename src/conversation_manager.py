@@ -51,7 +51,7 @@ class ConversationManager:
             return []
         return self.sessions[session_id][-last_n:]
     
-    def get_context_string(self, session_id: str, last_n: int = 3) -> str:
+    def get_context_string(self, session_id: str, last_n: int = 5) -> str:
         """Format history as context string"""
         history = self.get_history(session_id, last_n)
         if not history:

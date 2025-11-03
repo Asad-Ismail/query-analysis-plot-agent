@@ -53,7 +53,6 @@ class LangGraphOrchestrator:
         self.analysis_agent = DataAnalysisAgent(self.llm)
         self.viz_agent = VisualizationAgent(self.llm, style_config)
 
-        # NEW: Conversation components
         self.conversation_manager = ConversationManager(max_history=10)
         self.intent_classifier = IntentClassifier(self.llm)
 
@@ -82,10 +81,9 @@ class LangGraphOrchestrator:
         workflow.add_node("finalize_success", self._finalize_success_node)
         workflow.add_node("finalize_error", self._finalize_error_node)
         
-        # Set entry point - NOW STARTS WITH INTENT CLASSIFICATION
+        # Set entry point STARTS WITH INTENT CLASSIFICATION
         workflow.set_entry_point("classify_intent")
         
-        # NEW: Route after intent classification
         workflow.add_conditional_edges(
             "classify_intent",
             self._route_after_intent,
@@ -96,10 +94,8 @@ class LangGraphOrchestrator:
             }
         )
         
-        # NEW: Off-topic goes to success
         workflow.add_edge("handle_off_topic", "finalize_success")
         
-        # Add edges (UNCHANGED from original)
         workflow.add_conditional_edges(
             "check_permissions",
             self._route_after_permissions,
@@ -166,11 +162,9 @@ class LangGraphOrchestrator:
         """
         start_time = time.time()
         
-        # NEW: Generate session ID if not provided
         if not session_id:
             session_id = f"session-{int(time.time())}"
-        
-        # NEW: Get conversation context
+
         context = self.conversation_manager.get_context_string(session_id, last_n=3)
         
         logger.info(f"\n{'='*60}")
@@ -197,11 +191,11 @@ class LangGraphOrchestrator:
             "database": database,
             "user_role": user_role,
             "create_visualization": create_viz,
-            "session_id": session_id,  # NEW
-            "conversation_context": context,  # NEW
+            "session_id": session_id,  
+            "conversation_context": context,  
             "status": "pending",
             "current_step": "initialized",
-            "intent": None,  # NEW
+            "intent": None,  
             "allowed_tables": None,
             "database_schema": None,
             "sql_output": None,
@@ -221,7 +215,6 @@ class LangGraphOrchestrator:
             execution_time = time.time() - start_time
             
             if final_state["status"] == "success":
-                # NEW: Handle off-topic separately
                 if final_state.get("intent") == "off_topic":
                     response = AgentResponse(
                         status="success",
@@ -232,7 +225,6 @@ class LangGraphOrchestrator:
                         row_count=0
                     )
                 else:
-                    # UNCHANGED: Regular data query response
                     data_preview = None
                     full_data_json = None
                     if final_state.get("result_data"):
@@ -254,7 +246,6 @@ class LangGraphOrchestrator:
                         execution_time_seconds=execution_time
                     )
                     
-                    # NEW: Store in conversation history
                     summary = final_state.get("insights", {}).get("summary", f"Returned {final_state.get('row_count', 0)} rows") if final_state.get("insights") else f"Returned {final_state.get('row_count', 0)} rows"
                     self.conversation_manager.add_turn(
                         session_id=session_id,
@@ -312,7 +303,6 @@ class LangGraphOrchestrator:
                 row_count=0
             )
 
-    # NEW NODE
     def _classify_intent_node(self, state: dict) -> dict:
         """Classify query intent"""
         logger.info("Classifying intent...")
@@ -338,7 +328,6 @@ class LangGraphOrchestrator:
             state["error_message"] = f"Intent classification failed: {str(e)}"
             return state
     
-    # NEW NODE
     def _handle_off_topic_node(self, state: dict) -> dict:
         """Handle off-topic queries"""
         logger.info("Handling off-topic query...")
@@ -550,7 +539,6 @@ class LangGraphOrchestrator:
         logger.error(f" Workflow failed: {state.get('error_message')}")
         return state
     
-    # NEW ROUTING FUNCTION
     def _route_after_intent(self, state: dict) -> Literal["data_query", "off_topic", "error"]:
         """Route after intent classification"""
         if state["status"] == "error":
@@ -572,7 +560,6 @@ class LangGraphOrchestrator:
             return "error"
         return "continue"
     
-
     def _route_sql_execution(self, state: dict) -> Literal["generate_insights", "retry_sql", "error"]:
         """Route after query execution, checking for retries."""
         

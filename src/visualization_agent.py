@@ -121,6 +121,7 @@ class VisualizationAgent:
             ax.set_title(title, pad=20)
             
             # Add company branding watermark
+            '''
             ax.text(
                 0.99, 0.01, 
                 'Company Analytics ©',
@@ -130,7 +131,7 @@ class VisualizationAgent:
                 ha='right',
                 va='bottom'
             )
-            
+            '''
             # Save figure
             os.makedirs(output_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

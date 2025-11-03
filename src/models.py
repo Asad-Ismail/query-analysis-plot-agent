@@ -74,11 +74,11 @@ class AnalysisState(BaseModel):
     user_role: str = "analyst"
     create_visualization: bool = True
     
-    # NEW: Conversation fields
+    # Conversation fields
     session_id: Optional[str] = None
     conversation_context: Optional[str] = None
     
-    # NEW: Intent classification
+    # Intent classification
     intent: Optional[str] = None
     intent_reasoning: Optional[str] = None
     
@@ -120,6 +120,6 @@ class AgentResponse(BaseModel):
     chart_type: Optional[str] = None
     error: Optional[str] = None
     execution_time_seconds: Optional[float] = None
-    
+
     intent: Optional[str] = None
     message: Optional[str] = None
