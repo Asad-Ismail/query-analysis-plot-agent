@@ -66,7 +66,7 @@ def main():
         action="store_true",
         help="Enable verbose logging"
     )
-    
+
     parser.add_argument(
         "--session", "-s",
         help="Session ID for conversation continuity"
@@ -120,7 +120,7 @@ def main():
                     if not query:
                         continue
                     
-                    print()  # Blank line
+                    print() 
                     
                     result = orchestrator.process_request(
                         query=query,
@@ -138,7 +138,6 @@ def main():
                 except Exception as e:
                     print(f"\nError: {str(e)}\n")
         
-        # Single query mode (UNCHANGED except for session support)
         else:
             if not args.query:
                 print("Error: Query required in non-interactive mode. Use -i for interactive mode.")

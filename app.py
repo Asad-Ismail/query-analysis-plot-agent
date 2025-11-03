@@ -80,7 +80,6 @@ def process_query():
             "error": "Query is required"
         }), 400
     
-    # NEW: Generate session if not provided
     if not session_id:
         session_id = f"web-{int(time.time())}"
     
@@ -120,7 +119,6 @@ def process_query():
             "error": str(e)
         }), 500
 
-# NEW: Clear session endpoint
 @app.route('/api/clear_session', methods=['POST'])
 def clear_session():
     """Clear conversation history for a session"""
