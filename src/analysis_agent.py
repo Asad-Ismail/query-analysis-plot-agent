@@ -76,6 +76,7 @@ class DataAnalysisAgent:
                 3. Use proper JOINs when multiple tables are needed
                 4. Include helpful column aliases for readability
                 5. Only use tables and columns from the provided schema
+                6. When calculating revenue or sales: Use UnitPrice * Quantity 
 
                 ***CRITICAL RULE***:
                 If the user's query cannot be answered *exactly* using ONLY the tables and columns in the "Available Schema", you MUST respond with an error. 
@@ -85,7 +86,7 @@ class DataAnalysisAgent:
                 {schema}"""),
                 
                 ("user", """{history}
-                User Query: {query}""")
+                User Query: {query} """)
                 ])
         
         # Use structured output
