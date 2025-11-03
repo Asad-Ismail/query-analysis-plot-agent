@@ -33,7 +33,8 @@ We are using Langgraph framework to orchestrate the workflow for agents
 
 ## Demo
 
-<iframe src="https://archive.org/embed/demo_agent_202511" width="560" height="384" frameborder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen></iframe>
+[Click to watch the demo video](vis/demo_agent.mp4)
+
 
 ## 🚀 Quick Start
 
