@@ -33,7 +33,7 @@ def main():
     
     parser.add_argument(
         "query",
-        nargs="?",  # NEW: Make optional for interactive mode
+        nargs="?", 
         help="Natural language query to analyze"
     )
     parser.add_argument(
@@ -58,7 +58,6 @@ def main():
     )
     parser.add_argument(
         "--api-base",
-        default="https://chat.int.bayer.com/api/v2",
         help="Custom OpenAI API base URL"
     )
     parser.add_argument(
@@ -84,6 +83,9 @@ def main():
     if not api_key:
         print("Error: OpenAI API key required. Set OPENAI_API_KEY environment variable or use --api-key")
         sys.exit(1)
+
+    # Get API base URL
+    openai_api_base = args.api_base or os.getenv("OPENAI_API_BASE")
     
     # Configure logging
     if args.verbose:
@@ -100,7 +102,7 @@ def main():
         orchestrator = LangGraphOrchestrator(
             openai_api_key=api_key,
             style_config=STYLE_CONFIG,
-            openai_api_base=args.api_base
+            openai_api_base=openai_api_base
         )
         
         session_id = args.session or f"cli-{int(time.time())}"
@@ -119,8 +121,6 @@ def main():
                     
                     if not query:
                         continue
-                    
-                    print() 
                     
                     result = orchestrator.process_request(
                         query=query,

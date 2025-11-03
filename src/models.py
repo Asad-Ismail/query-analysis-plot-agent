@@ -1,8 +1,6 @@
 """Pydantic models for structured outputs and state management"""
 from typing import Optional, List, Literal
 from pydantic import BaseModel, Field, ConfigDict
-import pandas as pd
-
 
 class IntentOutput(BaseModel):
     """Intent classification for incoming queries"""

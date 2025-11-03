@@ -119,19 +119,7 @@ class VisualizationAgent:
             # Apply title and branding
             title = query[:60] + "..." if len(query) > 60 else query
             ax.set_title(title, pad=20)
-            
-            # Add company branding watermark
-            '''
-            ax.text(
-                0.99, 0.01, 
-                'Company Analytics ©',
-                transform=ax.transAxes, 
-                fontsize=8, 
-                alpha=0.5,
-                ha='right',
-                va='bottom'
-            )
-            '''
+
             # Save figure
             os.makedirs(output_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -289,9 +277,7 @@ class VisualizationAgent:
         """Create pie chart"""
         labels_col = recommendation.x_column or df.columns[0]
         values_col = recommendation.y_column or df.columns[1]
-        
-        # Limit to top 8 categories
-        df_plot = df.nlargest(8, values_col) if pd.api.types.is_numeric_dtype(df[values_col]) else df.head(8)
+
         df_plot = df 
         
         colors = self.style['colors'][:len(df_plot)]

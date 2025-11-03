@@ -21,7 +21,7 @@ STYLE_CONFIG = {
 
 # Initialize components
 api_key = os.getenv("OPENAI_API_KEY")
-api_base = os.getenv("OPENAI_API_BASE", "https://chat.int.bayer.com/api/v2")
+api_base = os.getenv("OPENAI_API_BASE")
 
 if not api_key:
     raise ValueError("OPENAI_API_KEY environment variable required")
@@ -72,7 +72,7 @@ def process_query():
     user_role = data.get('role', 'analyst')
     create_viz = data.get('create_viz', True)
     chart_type = data.get('chart_type')
-    session_id = data.get('session_id')  # NEW: Get session from request
+    session_id = data.get('session_id')  å
     
     if not query:
         return jsonify({
