@@ -72,7 +72,7 @@ def process_query():
     user_role = data.get('role', 'analyst')
     create_viz = data.get('create_viz', True)
     chart_type = data.get('chart_type')
-    session_id = data.get('session_id')  å
+    session_id = data.get('session_id') 
     
     if not query:
         return jsonify({
