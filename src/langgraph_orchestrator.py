@@ -78,8 +78,8 @@ class LangGraphOrchestrator:
         workflow = StateGraph(dict)
         
         # Add nodes
-        workflow.add_node("classify_intent", self._classify_intent_node)  # NEW
-        workflow.add_node("handle_off_topic", self._handle_off_topic_node)  # NEW
+        workflow.add_node("classify_intent", self._classify_intent_node)  
+        workflow.add_node("handle_off_topic", self._handle_off_topic_node)  
         workflow.add_node("check_permissions", self._check_permissions_node)
         workflow.add_node("generate_sql", self._generate_sql_node)
         workflow.add_node("execute_query", self._execute_query_node)
@@ -172,7 +172,7 @@ class LangGraphOrchestrator:
         if not session_id:
             session_id = f"session-{int(time.time())}"
 
-        context = self.conversation_manager.get_context_string(session_id, last_n=3)
+        context = self.conversation_manager.get_context_string(session_id, last_n=10)
         
         logger.info(f"\n{'='*60}")
         logger.info(f"Processing: {query}")
