@@ -14,7 +14,7 @@ from src.analysis_agent import DataAnalysisAgent
 from src.visualization_agent import VisualizationAgent
 from src.conversation_manager import ConversationManager
 from src.intent_classifier import IntentClassifier
-#from PIL import Image
+from PIL import Image
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -82,6 +82,7 @@ class LangGraphOrchestrator:
         workflow.add_node("handle_off_topic", self._handle_off_topic_node)  
         workflow.add_node("check_permissions", self._check_permissions_node)
         workflow.add_node("generate_sql", self._generate_sql_node)
+        workflow.add_node("self_reflect", self._self_reflect_node)
         workflow.add_node("execute_query", self._execute_query_node)
         workflow.add_node("generate_insights", self._generate_insights_node)
         workflow.add_node("create_visualization", self._create_visualization_node)
@@ -116,7 +117,17 @@ class LangGraphOrchestrator:
             "generate_sql",
             self._route_after_sql,
             {
+                "continue": "self_reflect",
+                "error": "finalize_error"
+            }
+        )
+        
+        workflow.add_conditional_edges(
+            "self_reflect",
+            self._route_after_reflection,
+            {
                 "continue": "execute_query",
+                "retry_sql": "generate_sql",
                 "error": "finalize_error"
             }
         )
@@ -207,6 +218,9 @@ class LangGraphOrchestrator:
             "database_schema": None,
             "sql_output": None,
             "sql_validated": False,
+            "reflection_result": None,
+            "reflection_correction": None,
+            "reflection_retry_count": 0,
             "result_data": None,
             "row_count": 0,
             "insights": None,
@@ -217,6 +231,7 @@ class LangGraphOrchestrator:
         }
         
         # Execute workflow
+        execution_time = 0  # Initialize to avoid undefined variable in exception handler
         try:
             final_state = self.graph.invoke(initial_state)
             execution_time = time.time() - start_time
@@ -385,11 +400,21 @@ class LangGraphOrchestrator:
             if state.get("intent") == "follow_up" and state.get("conversation_context"):
                 query_with_context = f"{state['user_query']}\n\nContext:\n{state['conversation_context']}"
             
+            # Check if we should use reflection feedback
+            error_history = state.get("error_history")
+            if state.get("reflection_correction"):
+                # Add reflection feedback as guidance to error_history
+                if error_history is None:
+                    error_history = []
+                error_history.append(f"SEMANTIC ISSUE DETECTED: {state['reflection_correction']}")
+                # Clear the feedback so we don't reuse it
+                state["reflection_correction"] = None
+            
             sql_output = self.analysis_agent._generate_sql_structured(
                 query=query_with_context,
                 schema=state["database_schema"],
                 allowed_tables=state["allowed_tables"],
-                error_history=state.get("error_history")
+                error_history=error_history
             )
             
             # Validate SQL safety
@@ -437,6 +462,43 @@ class LangGraphOrchestrator:
             logger.error(f"SQL generation failed: {str(e)}")
             state["status"] = "error"
             state["error_message"] = f"SQL generation failed: {str(e)}"
+            return state
+    
+    def _self_reflect_node(self, state: dict) -> dict:
+        """Self-reflect on generated SQL for semantic correctness"""
+        logger.info("Self-reflecting on SQL...")
+        state["current_step"] = "self_reflecting_sql"
+        
+        try:
+            reflection = self.analysis_agent._selfreflect_sql_structured(
+                query=state["user_query"],
+                sql_query=state["sql_output"]["sql_query"],
+                sql_explanation=state["sql_output"]["explanation"],
+                schema=state["database_schema"],
+                allowed_tables=state["allowed_tables"]
+            )
+            
+            state["reflection_result"] = {
+                "is_correct": reflection.is_correct,
+                "correction_feedback": reflection.correction_feedback
+            }
+            
+            if reflection.is_correct:
+                logger.info("SQL passed self-reflection")
+                # Ensure status is cleared so we continue to execution
+                if state.get("status") == "retry_reflection":
+                    state["status"] = "pending"
+            else:
+                logger.warning(f"SQL failed self-reflection. Feedback: {reflection.correction_feedback}")
+                state["reflection_correction"] = reflection.correction_feedback
+                state["status"] = "retry_reflection"
+            
+            return state
+            
+        except Exception as e:
+            logger.error(f"Self-reflection failed: {str(e)}")
+            # Non-critical - continue with original SQL if reflection fails
+            state["reflection_result"] = {"is_correct": True, "correction_feedback": None}
             return state
     
     def _execute_query_node(self, state: dict) -> dict:
@@ -565,6 +627,27 @@ class LangGraphOrchestrator:
         """Route after SQL generation"""
         if state["status"] == "error":
             return "error"
+        return "continue"
+    
+    def _route_after_reflection(self, state: dict) -> Literal["continue", "retry_sql", "error"]:
+        """Route after SQL self-reflection"""
+        if state.get("status") == "retry_reflection":
+            state["status"] = "pending"  # Reset for retry
+            retry_count = state.get("reflection_retry_count", 0) + 1
+            state["reflection_retry_count"] = retry_count
+            
+            # Limit reflection retries to avoid infinite loops
+            max_reflection_retries = 2
+            if retry_count > max_reflection_retries:
+                logger.warning(f"Max reflection retries ({max_reflection_retries}) exceeded. Proceeding with current SQL despite semantic concerns.")
+                return "continue"
+            
+            logger.info(f"Retrying SQL generation based on reflection feedback (attempt {retry_count}/{max_reflection_retries})...")
+            return "retry_sql"
+        
+        if state.get("status") == "error":
+            return "error"
+        
         return "continue"
     
     def _route_sql_execution(self, state: dict) -> Literal["generate_insights", "retry_sql", "error"]:

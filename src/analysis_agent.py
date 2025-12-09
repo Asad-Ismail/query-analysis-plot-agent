@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict, List, Optional, Tuple
 import logging
-from src.models import SQLQueryOutput, InsightsOutput
+from src.models import SQLQueryOutput, SQLSelfReflectOutput, InsightsOutput
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -98,6 +98,81 @@ class DataAnalysisAgent:
         
         return result
     
+    def _selfreflect_sql_structured(
+        self, 
+        query: str,
+        sql_query: str,
+        sql_explanation: str,
+        schema: Dict[str, dict], 
+        allowed_tables: Optional[List[str]]
+    ) -> SQLSelfReflectOutput:
+            """Self-reflect on generated SQL to validate semantic correctness
+            
+            Args:
+                query: User's natural language query
+                sql_query: The generated SQL query
+                sql_explanation: Explanation of what the SQL does
+                schema: Full database schema
+                allowed_tables: Tables user can access (None = all tables)
+                
+            Returns:
+                SQLSelfReflectOutput with validation result and optional correction
+            """
+            # Filter schema based on permissions
+            if allowed_tables:
+                filtered_schema = {
+                    table: info 
+                    for table, info in schema.items() 
+                    if table in allowed_tables
+                }
+            else:
+                filtered_schema = schema
+            # Format schema for prompt
+            schema_text = self._format_schema(filtered_schema)
+            
+            # Create reflection prompt
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """You are an expert SQL reviewer. Your task is to verify if a generated SQL query correctly answers the user's question.
+
+                Evaluate the SQL query against these criteria:
+                1. Does it address the user's question semantically?
+                2. Does it use the correct tables and columns from the schema?
+                3. Are the JOINs, filters, and aggregations appropriate?
+                4. Does it return the data the user actually wants?
+                5. Are aggregations, GROUP BY, and ORDER BY clauses used correctly?
+
+                If the query is correct, set is_correct=True and leave correction_feedback empty.
+                If incorrect, set is_correct=False and provide specific feedback on what's wrong and how to fix it.
+                Focus on WHAT needs to change, not writing a complete new query.
+
+                Available Schema:
+                {schema}"""),
+                    
+                ("user", """User's Question: {query}
+
+Generated SQL Query:
+{sql_query}
+
+SQL Explanation: {sql_explanation}
+
+Is this SQL query semantically correct for answering the user's question?""")
+            ])
+            
+            # Use structured output
+            structured_llm = self.llm.with_structured_output(SQLSelfReflectOutput)
+            
+            # Generate reflection
+            result = structured_llm.invoke(
+                prompt.format_messages(
+                    schema=schema_text,
+                    query=query,
+                    sql_query=sql_query,
+                    sql_explanation=sql_explanation
+                )
+            )
+            
+            return result
+
     def _generate_insights_structured(
         self, 
         query: str, 

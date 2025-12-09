@@ -19,7 +19,7 @@ class IntentOutput(BaseModel):
 class SQLQueryOutput(BaseModel):
     """Structured output for SQL query generation"""
     sql_query: str = Field(
-        description="The generated SQL SELECT query. Must be a valid SQLite query."
+        description="The generated SQL SELECT query. Must be a valid SQL query."
     )
     explanation: str = Field(
         description="Brief explanation of what the query does"
@@ -30,6 +30,17 @@ class SQLQueryOutput(BaseModel):
     estimated_rows: Optional[int] = Field(
         default=None,
         description="Estimated number of rows this query might return"
+    )
+
+
+class SQLSelfReflectOutput(BaseModel):
+    """Structured output for SQL self-reflection and validation"""
+    is_correct: bool = Field(
+        description="Is the SQL query semantically correct and answers the question correctly?"
+    )
+    correction_feedback: Optional[str] = Field(
+        default=None,
+        description="Feedback on what needs to be corrected if the query is incorrect. This should describe the issue and suggest improvements, not provide a complete SQL query."
     )
 
 
