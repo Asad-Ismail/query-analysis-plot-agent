@@ -59,11 +59,12 @@ class DataAnalysisAgent:
 
         history_text = ""
         if error_history:
+            error_messages = '\n'.join(error_history)
             history_text = f"""
             ***PREVIOUS ATTEMPT FAILED*** 
             Your last SQL query failed. Please review the error and generate a new, corrected query.
             The error was:
-            {'\n'.join(error_history)}
+            {error_messages}
             ***REVIEW AND FIX THE QUERY***
             """
         
