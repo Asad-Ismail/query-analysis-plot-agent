@@ -20,7 +20,7 @@ We are using Langgraph framework to orchestrate the workflow for agents
 ### LangGraph Workflow:
 
 <p align="center">
-  <img src="vis/langgraph_workflow.png" alt="Logo" width="250">
+  <img src="vis/langgraph_workflow_self_reflect.png" alt="Logo" width="250">
 </p>
 
 
@@ -44,11 +44,12 @@ We are using Langgraph framework to orchestrate the workflow for agents
 git clone https://github.com/Asad-Ismail/query-analysis-plot-agent.git
 cd query-analysis-plot-agent
 
-# Install dependencies
+## Prefered way uise uv(faster and recommended)
+bash uv_install.sh
+
+# or alternatively Install dependencies using pip
 pip install -r requirements.txt
 
-# Or use uv (faster and recommended)
-bash uv_install.sh
 ```
 
 ### Configuration:
